@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Historical Dances",
+    "slug": "historical-dances-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "historical-dances",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6750a4"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.historicaldances.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6750a4"
+      },
+      "package": "com.historicaldances.app"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-av",
+      "expo-document-picker",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to upload images."
+        }
+      ],
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
