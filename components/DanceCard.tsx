@@ -1,6 +1,8 @@
-import { StyleSheet, TouchableOpacity } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { Card, Text, Chip } from 'react-native-paper'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 import type { Dance } from '@/types/database'
 
 interface Props {
@@ -8,46 +10,41 @@ interface Props {
   onPress: () => void
 }
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  beginner: '#4caf50',
-  intermediate: '#2196f3',
-  advanced: '#ff9800',
-  expert: '#f44336',
-}
-
 export default function DanceCard({ dance, onPress }: Props) {
   const { t, language } = useLanguage()
   const name = (language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? ''
-  const diffColor = dance.difficulty ? DIFFICULTY_COLORS[dance.difficulty] : undefined
 
   return (
     <Card style={styles.card} mode="elevated" onPress={onPress}>
       <Card.Content style={styles.content}>
-        <Text variant="titleMedium" style={styles.name}>{name}</Text>
-        <Card.Actions style={styles.actions}>
-          {dance.origin && (
-            <Text variant="bodySmall" style={styles.origin}>{dance.origin}</Text>
-          )}
-          {dance.difficulty && diffColor && (
+        <View style={styles.row}>
+          <View style={styles.left}>
+            <Text variant="titleMedium" style={styles.name}>{name}</Text>
+            {dance.origin && (
+              <Text variant="bodySmall" style={styles.origin}>{dance.origin}</Text>
+            )}
+          </View>
+          {dance.difficulty && (
             <Chip
-              compact
-              style={[styles.chip, { backgroundColor: diffColor + '22' }]}
-              textStyle={{ color: diffColor, fontSize: 11 }}
+              style={styles.chip}
+              textStyle={styles.chipText}
             >
               {t(dance.difficulty as any)}
             </Chip>
           )}
-        </Card.Actions>
+        </View>
       </Card.Content>
     </Card>
   )
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: 8, backgroundColor: '#fff' },
-  content: { paddingBottom: 4 },
-  name: { fontWeight: 'bold' },
-  actions: { paddingHorizontal: 0, paddingTop: 4, justifyContent: 'space-between' },
-  origin: { opacity: 0.6, flex: 1 },
-  chip: { height: 24, borderRadius: 12 },
+  card: { marginBottom: 8, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
+  content: { paddingVertical: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  left: { flex: 1 },
+  name: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
+  origin: { color: Colors.mutedForeground, marginTop: 2 },
+  chip: { height: 32, borderRadius: 6, backgroundColor: Colors.secondary },
+  chipText: { color: Colors.secondaryForeground, fontSize: 12, fontFamily: Fonts.bodySemiBold },
 })

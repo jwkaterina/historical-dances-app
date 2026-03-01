@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 
-export default function BallsLayout() {
+export default function TutorialsLayout() {
   const { t } = useLanguage()
   return (
     <Stack
@@ -20,9 +20,8 @@ export default function BallsLayout() {
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: t('balls') }} />
-      <Stack.Screen name="[id]" options={{ title: t('balls') }} />
-      <Stack.Screen name="create" options={{ title: t('createBall') }} />
+      <Stack.Screen name="index" options={{ title: t('tutorials') }} />
+      <Stack.Screen name="[id]" options={{ title: t('tutorials') }} />
     </Stack>
   )
 }

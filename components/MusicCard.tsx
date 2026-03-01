@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native'
 import { Card, Text, IconButton } from 'react-native-paper'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 import type { MusicTrack } from '@/types/database'
 
 interface Props {
@@ -26,7 +28,7 @@ export default function MusicCard({ track, isPlaying, onPress }: Props) {
         </View>
         <IconButton
           icon={isPlaying ? 'pause-circle' : 'play-circle'}
-          iconColor={isPlaying ? '#6750a4' : '#aaa'}
+          iconColor={isPlaying ? Colors.primary : Colors.accent}
           size={36}
           onPress={onPress}
         />
@@ -36,12 +38,12 @@ export default function MusicCard({ track, isPlaying, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: 8, marginHorizontal: 12, backgroundColor: '#fff' },
-  playing: { borderWidth: 2, borderColor: '#6750a4' },
+  card: { marginBottom: 8, marginHorizontal: 12, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
+  playing: { borderColor: Colors.primary, borderWidth: 2 },
   content: { flexDirection: 'row', alignItems: 'center', paddingRight: 0 },
   info: { flex: 1 },
-  title: { fontWeight: 'bold' },
-  artist: { opacity: 0.7 },
+  title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
+  artist: { color: Colors.mutedForeground },
   meta: { flexDirection: 'row', gap: 8, marginTop: 2 },
-  metaText: { opacity: 0.5 },
+  metaText: { color: Colors.mutedForeground },
 })

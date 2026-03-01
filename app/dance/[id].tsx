@@ -1,14 +1,17 @@
 import { useState } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
-import { Text, Card, Divider, Button, ActivityIndicator, Snackbar } from 'react-native-paper'
+import { ScrollView, StyleSheet, View, Text as RNText } from 'react-native'
+import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip } from 'react-native-paper'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useDance, useDeleteDance } from '@/hooks/useDances'
 import { useAuth } from '@/hooks/useAuth'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 import AudioPlayer from '@/components/AudioPlayer'
 import VideoPlayer from '@/components/VideoPlayer'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import type { DanceVideo, DanceFigure, MusicTrack } from '@/types/database'
+
 
 export default function DanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -22,17 +25,8 @@ export default function DanceDetailScreen() {
   const { data: dance, isLoading } = useDance(id)
   const deleteMutation = useDeleteDance()
 
-  if (isLoading) {
-    return <ActivityIndicator style={styles.center} size="large" />
-  }
-
-  if (!dance) {
-    return (
-      <View style={styles.center}>
-        <Text>{t('noDancesFound')}</Text>
-      </View>
-    )
-  }
+  if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
+  if (!dance) return <View style={styles.center}><Text style={{ color: Colors.mutedForeground }}>{t('noDancesFound')}</Text></View>
 
   const name = (language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? ''
   const description = (language === 'de' ? dance.description_de : dance.description_ru) ?? dance.description ?? ''
@@ -43,66 +37,71 @@ export default function DanceDetailScreen() {
 
   const handleDelete = async () => {
     const result = await deleteMutation.mutateAsync(dance.id)
-    if (!result.success) {
-      setSnackbar(result.message ?? t('toastFailedDeleteDance'))
-      setShowDelete(false)
-      return
-    }
+    if (!result.success) { setSnackbar(result.message ?? t('toastFailedDeleteDance')); setShowDelete(false); return }
     router.back()
   }
 
   return (
     <>
-      <Stack.Screen options={{ title: name, headerShown: true }} />
+      <Stack.Screen options={{
+        title: name,
+        headerShown: true,
+        headerStyle: { backgroundColor: Colors.foreground },
+        headerTintColor: Colors.background,
+        headerShadowVisible: false,
+        headerTitle: ({ children, tintColor }) => (
+          <RNText style={{ fontFamily: Fonts.heading, color: tintColor ?? Colors.background, fontSize: 17 }}>{children}</RNText>
+        ),
+      }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>{name}</Text>
 
         <View style={styles.meta}>
           {dance.difficulty && (
-            <Text variant="bodySmall" style={styles.badge}>{t(dance.difficulty as any)}</Text>
+            <Chip style={styles.badge} textStyle={styles.badgeText}>
+              {t(dance.difficulty as any)}
+            </Chip>
           )}
-          {dance.origin && (
-            <Text variant="bodySmall" style={styles.origin}>{t('origin')}: {dance.origin}</Text>
-          )}
+          {dance.origin && <Text variant="bodySmall" style={styles.origin}>{t('origin')}: {dance.origin}</Text>}
         </View>
 
         {videos.length > 0 && (
           <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>{t('watchVideo')}</Text>
-            {videos.map((video: DanceVideo) => (
-              <VideoPlayer key={video.id} video={video} style={styles.videoPlayer} />
-            ))}
+            <Text variant="titleSmall" style={styles.sectionTitle}>{t('watchVideo')}</Text>
+            <Divider style={styles.divider} />
+            {videos.map((video: DanceVideo) => <VideoPlayer key={video.id} video={video} style={styles.videoPlayer} />)}
           </View>
         )}
 
         {description ? (
           <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>{t('description')}</Text>
+            <Text variant="titleSmall" style={styles.sectionTitle}>{t('description')}</Text>
+            <Divider style={styles.divider} />
             <Text variant="bodyMedium" style={styles.bodyText}>{description}</Text>
           </View>
         ) : null}
 
         {scheme ? (
           <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>{t('scheme')}</Text>
-            <Text variant="bodyMedium" style={[styles.bodyText, styles.schemeText]}>{scheme}</Text>
+            <Text variant="titleSmall" style={styles.sectionTitle}>{t('scheme')}</Text>
+            <Divider style={styles.divider} />
+            <Text variant="bodyMedium" style={styles.schemeText}>{scheme}</Text>
           </View>
         ) : null}
 
         {figures.length > 0 && (
           <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>{t('figures')}</Text>
+            <Text variant="titleSmall" style={styles.sectionTitle}>{t('figures')}</Text>
+            <Divider style={styles.divider} />
             {figures.map((figure: DanceFigure, idx: number) => {
               const figScheme = (language === 'de' ? figure.scheme_de : figure.scheme_ru) ?? ''
               const figVideos = [...(figure.videos ?? [])].sort((a, b) => a.order_index - b.order_index)
               return (
                 <Card key={figure.id} style={styles.figureCard} mode="outlined">
                   <Card.Content>
-                    <Text variant="titleSmall" style={styles.figureTitle}>{t('figure')} {idx + 1}</Text>
+                    <Text variant="labelMedium" style={styles.figureTitle}>{t('figure')} {idx + 1}</Text>
                     {figScheme ? <Text variant="bodyMedium" style={styles.schemeText}>{figScheme}</Text> : null}
-                    {figVideos.map(v => (
-                      <VideoPlayer key={v.id} video={v} style={styles.videoPlayer} />
-                    ))}
+                    {figVideos.map(v => <VideoPlayer key={v.id} video={v} style={styles.videoPlayer} />)}
                   </Card.Content>
                 </Card>
               )
@@ -110,33 +109,34 @@ export default function DanceDetailScreen() {
           </View>
         )}
 
-        {musicTracks.length > 0 && (
-          <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>{t('associatedMusic')}</Text>
-            {musicTracks.map((track: MusicTrack) => (
-              <Card key={track.id} style={styles.musicCard} mode="outlined" onPress={() => setCurrentTrack(t => t?.id === track.id ? null : track)}>
-                <Card.Content>
-                  <Text variant="titleSmall">{track.title}</Text>
-                  {track.artist && <Text variant="bodySmall" style={{ opacity: 0.7 }}>{track.artist}</Text>}
-                  {track.tempo && <Text variant="bodySmall" style={{ opacity: 0.7 }}>{track.tempo} BPM</Text>}
-                </Card.Content>
-              </Card>
-            ))}
-          </View>
-        )}
-
-        {musicTracks.length === 0 && (
-          <View style={styles.section}>
+        <View style={styles.section}>
+          <Text variant="titleSmall" style={styles.sectionTitle}>{t('associatedMusic')}</Text>
+          <Divider style={styles.divider} />
+          {musicTracks.length === 0 ? (
             <Text variant="bodyMedium" style={styles.emptyText}>{t('noMusicAssociated')}</Text>
-          </View>
-        )}
+          ) : musicTracks.map((track: MusicTrack) => (
+            <Card key={track.id} style={styles.musicCard} mode="outlined"
+              onPress={() => setCurrentTrack(t => t?.id === track.id ? null : track)}>
+              <Card.Content style={styles.musicCardContent}>
+                <View style={{ flex: 1 }}>
+                  <Text variant="titleSmall" style={styles.musicTitle}>{track.title}</Text>
+                  {track.artist && <Text variant="bodySmall" style={styles.musicArtist}>{track.artist}</Text>}
+                  {track.tempo && <Text variant="bodySmall" style={styles.musicMeta}>{track.tempo} BPM</Text>}
+                </View>
+                <Text style={{ fontSize: 20 }}>{currentTrack?.id === track.id ? '⏸' : '▶'}</Text>
+              </Card.Content>
+            </Card>
+          ))}
+        </View>
 
         {isAuthenticated && (
           <View style={styles.actions}>
-            <Button mode="outlined" icon="pencil" onPress={() => router.push(`/dance/edit/${dance.id}`)} style={styles.actionBtn}>
+            <Button mode="outlined" icon="pencil" onPress={() => router.push(`/dance/edit/${dance.id}`)}
+              style={styles.actionBtn} textColor={Colors.primary}>
               {t('edit')}
             </Button>
-            <Button mode="outlined" icon="delete" textColor="red" onPress={() => setShowDelete(true)} style={styles.actionBtn}>
+            <Button mode="outlined" icon="delete" textColor={Colors.destructive}
+              onPress={() => setShowDelete(true)} style={styles.actionBtn}>
               {t('deleteDance')}
             </Button>
           </View>
@@ -145,51 +145,42 @@ export default function DanceDetailScreen() {
 
       {currentTrack?.audio_url && (
         <View style={styles.playerContainer}>
-          <AudioPlayer
-            url={currentTrack.audio_url}
-            title={currentTrack.title}
-            artist={currentTrack.artist ?? undefined}
-            onClose={() => setCurrentTrack(null)}
-          />
+          <AudioPlayer url={currentTrack.audio_url} title={currentTrack.title}
+            artist={currentTrack.artist ?? undefined} onClose={() => setCurrentTrack(null)} />
         </View>
       )}
 
-      <ConfirmDialog
-        visible={showDelete}
-        title={t('confirmDelete')}
-        message={t('deleteConfirmMessage')}
-        onConfirm={handleDelete}
-        onDismiss={() => setShowDelete(false)}
-        loading={deleteMutation.isPending}
-      />
+      <ConfirmDialog visible={showDelete} title={t('confirmDelete')} message={t('deleteConfirmMessage')}
+        onConfirm={handleDelete} onDismiss={() => setShowDelete(false)} loading={deleteMutation.isPending} />
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={5000}>{snackbar}</Snackbar>
     </>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f6f5f5' },
+  container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontWeight: 'bold', marginBottom: 8 },
-  meta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  badge: { backgroundColor: '#e8def8', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, overflow: 'hidden' },
-  origin: { opacity: 0.7 },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontWeight: 'bold', marginBottom: 8 },
-  bodyText: { lineHeight: 22, opacity: 0.85 },
-  schemeText: { fontFamily: 'monospace', backgroundColor: '#f0edf6', padding: 12, borderRadius: 8, lineHeight: 22 },
-  videoPlayer: { marginBottom: 12, borderRadius: 8, overflow: 'hidden' },
-  figureCard: { marginBottom: 12 },
-  figureTitle: { fontWeight: 'bold', marginBottom: 4 },
-  musicCard: { marginBottom: 8, backgroundColor: '#fff' },
-  emptyText: { opacity: 0.5, fontStyle: 'italic' },
-  actions: { flexDirection: 'row', gap: 12, marginTop: 8, justifyContent: 'center' },
-  actionBtn: { flex: 1 },
-  playerContainer: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    backgroundColor: '#fff',
-    elevation: 8,
-  },
+  title: { fontFamily: Fonts.heading, color: Colors.foreground, marginBottom: 8 },
+  meta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 16 },
+  badge: { borderRadius: 6, backgroundColor: Colors.secondary },
+  badgeText: { color: Colors.secondaryForeground, fontSize: 12, fontFamily: 'Lora_600SemiBold' },
+  origin: { color: Colors.mutedForeground },
+  section: { marginBottom: 20 },
+  sectionTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.mutedForeground, textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5, marginBottom: 6 },
+  divider: { backgroundColor: Colors.border, marginBottom: 10 },
+  bodyText: { color: Colors.foreground, lineHeight: 22 },
+  schemeText: { color: Colors.foreground, backgroundColor: Colors.muted, padding: 12, borderRadius: 6, lineHeight: 22, fontFamily: 'monospace' },
+  videoPlayer: { marginBottom: 8 },
+  figureCard: { marginBottom: 10, backgroundColor: Colors.card, borderColor: Colors.border },
+  figureTitle: { color: Colors.mutedForeground, marginBottom: 4 },
+  musicCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border },
+  musicCardContent: { flexDirection: 'row', alignItems: 'center' },
+  musicTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
+  musicArtist: { color: Colors.mutedForeground },
+  musicMeta: { color: Colors.mutedForeground },
+  emptyText: { color: Colors.mutedForeground, fontStyle: 'italic' },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  actionBtn: { flex: 1, borderColor: Colors.border },
+  playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, elevation: 8 },
 })

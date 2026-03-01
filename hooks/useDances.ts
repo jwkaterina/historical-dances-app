@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchDances, fetchDanceById, createDance, updateDance, deleteDance, syncDanceVideos, syncDanceMusicLinks } from '@/lib/api/dances'
+import { fetchDances, fetchDanceById, createDance, updateDance, deleteDance, syncDanceVideos, syncDanceMusicLinks, syncDanceFigures, fetchDanceTutorials, syncDanceTutorials } from '@/lib/api/dances'
 import type { Dance } from '@/types/database'
 
 export const DANCES_KEY = 'dances'
@@ -60,6 +60,30 @@ export function useSyncDanceMusicLinks() {
   return useMutation({
     mutationFn: ({ danceId, musicIds }: { danceId: string; musicIds: string[] }) =>
       syncDanceMusicLinks(danceId, musicIds),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: [DANCES_KEY, vars.danceId] }),
+  })
+}
+
+export function useDanceTutorials(danceId: string) {
+  return useQuery({
+    queryKey: ['dance_tutorials', danceId],
+    queryFn: () => fetchDanceTutorials(danceId),
+    enabled: !!danceId,
+  })
+}
+
+export function useSyncDanceTutorials() {
+  return useMutation({
+    mutationFn: ({ danceId, tutorialIds }: { danceId: string; tutorialIds: string[] }) =>
+      syncDanceTutorials(danceId, tutorialIds),
+  })
+}
+
+export function useSyncDanceFigures() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ danceId, figures }: { danceId: string; figures: Array<{ scheme_de: string; scheme_ru: string; videoType?: string; videoUrl?: string }> }) =>
+      syncDanceFigures(danceId, figures),
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: [DANCES_KEY, vars.danceId] }),
   })
 }

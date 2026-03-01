@@ -37,7 +37,8 @@
           "photosPermission": "The app accesses your photos to upload images."
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

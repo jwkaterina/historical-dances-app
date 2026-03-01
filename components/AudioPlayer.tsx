@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text, IconButton, ProgressBar } from 'react-native-paper'
 import { Audio } from 'expo-av'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 
 interface Props {
   url: string
@@ -43,20 +45,13 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
     }
 
     load()
-
-    return () => {
-      sound?.unloadAsync()
-      soundRef.current = null
-    }
+    return () => { sound?.unloadAsync(); soundRef.current = null }
   }, [url])
 
   const togglePlay = async () => {
     if (!soundRef.current) return
-    if (isPlaying) {
-      await soundRef.current.pauseAsync()
-    } else {
-      await soundRef.current.playAsync()
-    }
+    if (isPlaying) await soundRef.current.pauseAsync()
+    else await soundRef.current.playAsync()
   }
 
   const formatTime = (ms: number) => {
@@ -68,37 +63,33 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.info}>
-        <Text variant="bodyMedium" style={styles.title} numberOfLines={1}>{title}</Text>
-        {artist && <Text variant="bodySmall" style={styles.artist}>{artist}</Text>}
+      <View style={styles.row}>
+        <View style={styles.info}>
+          <Text variant="bodyMedium" style={styles.title} numberOfLines={1}>{title}</Text>
+          {artist && <Text variant="bodySmall" style={styles.artist}>{artist}</Text>}
+        </View>
+        <View style={styles.buttons}>
+          <IconButton icon={isPlaying ? 'pause' : 'play'} size={28} onPress={togglePlay} iconColor={Colors.primary} />
+          {onClose && <IconButton icon="close" size={20} onPress={onClose} iconColor={Colors.mutedForeground} />}
+        </View>
       </View>
-      <View style={styles.controls}>
+      <View style={styles.progressRow}>
         <Text variant="bodySmall" style={styles.time}>{formatTime(position)}</Text>
-        <ProgressBar progress={progress} style={styles.progress} color="#6750a4" />
+        <ProgressBar progress={progress} style={styles.progress} color={Colors.primary} />
         <Text variant="bodySmall" style={styles.time}>{formatTime(duration)}</Text>
-      </View>
-      <View style={styles.buttons}>
-        <IconButton
-          icon={isPlaying ? 'pause' : 'play'}
-          size={28}
-          onPress={togglePlay}
-          iconColor="#6750a4"
-        />
-        {onClose && (
-          <IconButton icon="close" size={20} onPress={onClose} iconColor="#aaa" />
-        )}
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 12 },
-  info: { marginBottom: 8 },
-  title: { fontWeight: 'bold' },
-  artist: { opacity: 0.7 },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  progress: { flex: 1, height: 4, borderRadius: 2 },
-  time: { opacity: 0.5, minWidth: 36 },
-  buttons: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
+  container: { padding: 12, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  info: { flex: 1 },
+  title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
+  artist: { color: Colors.mutedForeground },
+  buttons: { flexDirection: 'row' },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  progress: { flex: 1, height: 3, borderRadius: 2, backgroundColor: Colors.border },
+  time: { color: Colors.mutedForeground, minWidth: 36, fontSize: 11 },
 })

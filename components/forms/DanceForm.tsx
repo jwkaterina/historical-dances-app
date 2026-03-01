@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native'
-import {
-  Text, TextInput, Button, SegmentedButtons, Card,
-  IconButton, Snackbar, ActivityIndicator, Menu,
-} from 'react-native-paper'
+import { Modal, FlatList, ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native'
+import { Text, TextInput, Button, SegmentedButtons, Card, IconButton, Snackbar, ActivityIndicator, Menu, Divider, Searchbar, List } from 'react-native-paper'
 import { useRouter } from 'expo-router'
+import * as DocumentPicker from 'expo-document-picker'
 import { useLanguage } from '@/contexts/LanguageContext'
-import { useDance, useCreateDance, useUpdateDance, useSyncDanceVideos } from '@/hooks/useDances'
+import {
+  useDance, useCreateDance, useUpdateDance,
+  useSyncDanceVideos, useSyncDanceFigures, useSyncDanceMusicLinks,
+  useDanceTutorials, useSyncDanceTutorials,
+} from '@/hooks/useDances'
+import { useMusic } from '@/hooks/useMusic'
+import { useTutorials } from '@/hooks/useTutorials'
+import { createMusicTrack } from '@/lib/api/music'
+import { uploadFile, generateFileName } from '@/lib/upload'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
+import type { Tutorial } from '@/types/database'
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'] as const
 
@@ -14,6 +23,27 @@ interface VideoEntry {
   id?: string
   video_type: 'youtube' | 'uploaded'
   url: string
+  localUri?: string
+  mimeType?: string
+}
+
+interface FigureEntry {
+  scheme_de: string
+  scheme_ru: string
+  videoType: 'youtube' | 'uploaded'
+  videoUrl: string
+  videoLocalUri?: string
+  videoMimeType?: string
+}
+
+interface MusicEntry {
+  id?: string
+  title: string
+  artist: string
+  tempo: string
+  audioUrl: string
+  audioLocalUri?: string
+  audioMimeType?: string
 }
 
 interface Props {
@@ -21,29 +51,58 @@ interface Props {
 }
 
 export default function DanceForm({ danceId }: Props) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const router = useRouter()
   const isEdit = !!danceId
 
+  // Data queries
   const { data: existing, isLoading } = useDance(danceId ?? '')
+  const { data: allTutorials = [] } = useTutorials()
+  const { data: danceTutorialIds = [] } = useDanceTutorials(danceId ?? '')
+  const { data: allMusic = [] } = useMusic()
+
+  // Mutations
   const createDance = useCreateDance()
   const updateDance = useUpdateDance()
   const syncVideos = useSyncDanceVideos()
+  const syncFigures = useSyncDanceFigures()
+  const syncMusicLinks = useSyncDanceMusicLinks()
+  const syncTutorials = useSyncDanceTutorials()
 
+  // Core fields
   const [nameDe, setNameDe] = useState('')
   const [nameRu, setNameRu] = useState('')
   const [descDe, setDescDe] = useState('')
   const [descRu, setDescRu] = useState('')
   const [schemeDe, setSchemeDe] = useState('')
   const [schemeRu, setSchemeRu] = useState('')
-  const [difficulty, setDifficulty] = useState<string>('')
-  const [origin, setOrigin] = useState('')
-  const [videos, setVideos] = useState<VideoEntry[]>([])
-  const [newVideoUrl, setNewVideoUrl] = useState('')
-  const [newVideoType, setNewVideoType] = useState<'youtube' | 'uploaded'>('youtube')
-  const [error, setError] = useState('')
+  const [difficulty, setDifficulty] = useState('')
   const [diffMenuVisible, setDiffMenuVisible] = useState(false)
 
+  // Videos
+  const [youtubeVideoId, setYoutubeVideoId] = useState<string | undefined>(undefined)
+  const [youtubeUrl, setYoutubeUrl] = useState('')
+  const [uploadedVideos, setUploadedVideos] = useState<VideoEntry[]>([])
+  const [newVideoType, setNewVideoType] = useState<'youtube' | 'uploaded'>('youtube')
+
+  // Figures
+  const [figures, setFigures] = useState<FigureEntry[]>([])
+
+  // Tutorials
+  const [selectedTutorials, setSelectedTutorials] = useState<Tutorial[]>([])
+  const [showTutorialPicker, setShowTutorialPicker] = useState(false)
+  const [tutorialSearch, setTutorialSearch] = useState('')
+
+  // Music
+  const [music, setMusic] = useState<MusicEntry[]>([])
+  const [showMusicPicker, setShowMusicPicker] = useState(false)
+  const [musicSearch, setMusicSearch] = useState('')
+
+  // Form state
+  const [error, setError] = useState('')
+  const [uploading, setUploading] = useState(false)
+
+  // Load existing dance
   useEffect(() => {
     if (existing) {
       setNameDe(existing.name_de ?? '')
@@ -53,203 +112,562 @@ export default function DanceForm({ danceId }: Props) {
       setSchemeDe(existing.scheme_de ?? '')
       setSchemeRu(existing.scheme_ru ?? '')
       setDifficulty(existing.difficulty ?? '')
-      setOrigin(existing.origin ?? '')
-      setVideos((existing.dance_videos ?? [])
-        .sort((a, b) => a.order_index - b.order_index)
-        .map(v => ({ id: v.id, video_type: v.video_type, url: v.url })))
+
+      const ytVideo = (existing.dance_videos ?? []).find(v => v.video_type === 'youtube')
+      setYoutubeVideoId(ytVideo?.id)
+      setYoutubeUrl(ytVideo?.url ?? '')
+      setUploadedVideos(
+        [...(existing.dance_videos ?? [])].filter(v => v.video_type === 'uploaded')
+          .sort((a, b) => a.order_index - b.order_index)
+          .map(v => ({ id: v.id, video_type: 'uploaded' as const, url: v.url }))
+      )
+
+      setFigures(
+        [...(existing.dance_figures ?? [])].sort((a, b) => a.order_index - b.order_index)
+          .map(f => {
+            const firstVideo = [...(f.videos ?? [])].sort((a, b) => a.order_index - b.order_index)[0]
+            return {
+              scheme_de: f.scheme_de ?? '',
+              scheme_ru: f.scheme_ru ?? '',
+              videoType: (firstVideo?.video_type ?? 'youtube') as 'youtube' | 'uploaded',
+              videoUrl: firstVideo?.url ?? '',
+            }
+          })
+      )
+
+      setMusic(
+        (existing.dance_music ?? []).map((dm: any) => ({
+          id: dm.music.id,
+          title: dm.music.title ?? '',
+          artist: dm.music.artist ?? '',
+          tempo: dm.music.tempo?.toString() ?? '',
+          audioUrl: dm.music.audio_url ?? '',
+        }))
+      )
     }
   }, [existing])
 
-  const addVideo = () => {
-    if (!newVideoUrl.trim()) return
-    setVideos(prev => [...prev, { video_type: newVideoType, url: newVideoUrl.trim() }])
-    setNewVideoUrl('')
+  // Load existing tutorial links
+  useEffect(() => {
+    if (danceTutorialIds.length > 0 && allTutorials.length > 0) {
+      const linked = danceTutorialIds
+        .map((id: string) => allTutorials.find(t => t.id === id))
+        .filter(Boolean) as Tutorial[]
+      setSelectedTutorials(linked)
+    }
+  }, [danceTutorialIds, allTutorials])
+
+  const pickVideoFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: ['video/*'] })
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0]
+      setUploadedVideos(prev => [...prev, {
+        video_type: 'uploaded',
+        url: asset.name ?? 'video',
+        localUri: asset.uri,
+        mimeType: asset.mimeType ?? 'video/mp4',
+      }])
+    }
   }
 
-  const removeVideo = (idx: number) => {
-    setVideos(prev => prev.filter((_, i) => i !== idx))
+  const addFigure = () => {
+    setFigures(prev => [...prev, { scheme_de: '', scheme_ru: '', videoType: 'youtube', videoUrl: '' }])
+  }
+
+  const updateFigure = (idx: number, updates: Partial<FigureEntry>) => {
+    setFigures(prev => prev.map((f, i) => i === idx ? { ...f, ...updates } : f))
+  }
+
+  const pickFigureVideo = async (idx: number) => {
+    const result = await DocumentPicker.getDocumentAsync({ type: ['video/*'] })
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0]
+      updateFigure(idx, {
+        videoUrl: asset.name ?? 'video',
+        videoLocalUri: asset.uri,
+        videoMimeType: asset.mimeType ?? 'video/mp4',
+      })
+    }
+  }
+
+  const updateMusic = (idx: number, field: keyof MusicEntry, value: string) => {
+    setMusic(prev => prev.map((m, i) => i === idx ? { ...m, [field]: value } : m))
+  }
+
+  const pickAudio = async (idx: number) => {
+    const result = await DocumentPicker.getDocumentAsync({ type: ['audio/*'] })
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0]
+      setMusic(prev => prev.map((m, i) => i === idx ? {
+        ...m,
+        audioUrl: asset.name ?? 'audio',
+        audioLocalUri: asset.uri,
+        audioMimeType: asset.mimeType ?? 'audio/mpeg',
+      } : m))
+    }
   }
 
   const handleSubmit = async () => {
-    if (!nameDe || !nameRu) {
-      setError(t('toastNameRequiredBothLanguages'))
-      return
-    }
-
+    if (!nameDe || !nameRu) { setError(t('toastNameRequiredBothLanguages')); return }
     const danceData = {
-      name: nameDe,
-      name_de: nameDe,
-      name_ru: nameRu,
-      description_de: descDe || null,
-      description_ru: descRu || null,
-      scheme_de: schemeDe || null,
-      scheme_ru: schemeRu || null,
+      name: nameDe, name_de: nameDe, name_ru: nameRu,
+      description_de: descDe || null, description_ru: descRu || null,
+      scheme_de: schemeDe || null, scheme_ru: schemeRu || null,
       difficulty: (difficulty as any) || null,
-      origin: origin || null,
     }
-
     try {
+      setUploading(true)
+
+      // Upload figure video files
+      const resolvedFigures = await Promise.all(figures.map(async (f) => {
+        if (f.videoLocalUri && f.videoMimeType) {
+          const ext = f.videoMimeType.split('/')[1] ?? 'mp4'
+          const videoUrl = await uploadFile('videos', generateFileName('figure', ext), f.videoLocalUri, f.videoMimeType)
+          return { ...f, videoUrl, videoType: 'uploaded' as const }
+        }
+        return f
+      }))
+
+      // Upload new video files
+      const resolvedUploads = await Promise.all(uploadedVideos.map(async (v) => {
+        if (v.localUri && v.mimeType) {
+          const ext = v.mimeType.split('/')[1] ?? 'mp4'
+          const url = await uploadFile('videos', generateFileName('video', ext), v.localUri, v.mimeType)
+          return { id: v.id, video_type: 'uploaded' as const, url }
+        }
+        return { id: v.id, video_type: v.video_type, url: v.url }
+      }))
+
+      const allVideos: Array<{ id?: string; video_type: string; url: string }> = [...resolvedUploads]
+      if (youtubeUrl.trim()) {
+        allVideos.unshift({ id: youtubeVideoId, video_type: 'youtube', url: youtubeUrl.trim() })
+      }
+
+      let finalDanceId: string
       if (isEdit && danceId) {
         await updateDance.mutateAsync({ id: danceId, data: danceData })
-        await syncVideos.mutateAsync({ danceId, videos })
-        router.back()
+        finalDanceId = danceId
       } else {
         const created = await createDance.mutateAsync(danceData)
-        if (videos.length > 0) {
-          await syncVideos.mutateAsync({ danceId: created.id, videos })
-        }
-        router.back()
+        finalDanceId = created.id
       }
+
+      await syncVideos.mutateAsync({ danceId: finalDanceId, videos: allVideos })
+
+      await syncFigures.mutateAsync({
+        danceId: finalDanceId,
+        figures: resolvedFigures.map(f => ({
+          scheme_de: f.scheme_de,
+          scheme_ru: f.scheme_ru,
+          videoType: f.videoType,
+          videoUrl: f.videoUrl,
+        })),
+      })
+
+      await syncTutorials.mutateAsync({
+        danceId: finalDanceId,
+        tutorialIds: selectedTutorials.map(t => t.id),
+      })
+
+      const resolvedMusic = await Promise.all(music.map(async (m) => {
+        if (m.id) return m
+        if (m.audioLocalUri && m.audioMimeType) {
+          const ext = m.audioMimeType.split('/')[1] ?? 'mp3'
+          const audioUrl = await uploadFile('audio', generateFileName('audio', ext), m.audioLocalUri, m.audioMimeType)
+          return { ...m, audioUrl }
+        }
+        return m
+      }))
+
+      const musicIds = await Promise.all(resolvedMusic.map(async (m) => {
+        if (m.id) return m.id
+        const track = await createMusicTrack({
+          title: m.title || 'Untitled',
+          artist: m.artist || null,
+          tempo: m.tempo ? parseInt(m.tempo, 10) : null,
+          audio_url: m.audioUrl || null,
+        })
+        return track.id
+      }))
+
+      await syncMusicLinks.mutateAsync({ danceId: finalDanceId, musicIds })
+      router.back()
     } catch (e: any) {
       setError(e.message ?? t('error'))
+    } finally {
+      setUploading(false)
     }
   }
 
-  if (isEdit && isLoading) {
-    return <ActivityIndicator style={{ flex: 1 }} size="large" />
+  if (isEdit && isLoading) return <ActivityIndicator style={{ flex: 1 }} size="large" color={Colors.primary} />
+
+  const isSaving = uploading || createDance.isPending || updateDance.isPending ||
+    syncVideos.isPending || syncFigures.isPending || syncMusicLinks.isPending || syncTutorials.isPending
+
+  const inputProps = {
+    mode: 'outlined' as const,
+    outlineColor: Colors.border,
+    activeOutlineColor: Colors.primary,
+    textColor: Colors.foreground,
+    style: styles.input,
   }
 
-  const isSaving = createDance.isPending || updateDance.isPending || syncVideos.isPending
+  const filteredTutorials = allTutorials.filter(tut => {
+    if (!tutorialSearch) return true
+    const title = (language === 'de' ? tut.title_de : tut.title_ru) ?? ''
+    return title.toLowerCase().includes(tutorialSearch.toLowerCase())
+  })
+
+  const filteredMusic = allMusic.filter(track => {
+    if (!musicSearch) return true
+    const term = musicSearch.toLowerCase()
+    return track.title.toLowerCase().includes(term) || (track.artist ?? '').toLowerCase().includes(term)
+  })
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text variant="titleSmall" style={styles.sectionLabel}>DE</Text>
-        <TextInput
-          label={t('danceName')}
-          value={nameDe}
-          onChangeText={setNameDe}
-          mode="outlined"
-          style={styles.input}
-        />
-        <TextInput
-          label={t('descriptionLabel')}
-          value={descDe}
-          onChangeText={setDescDe}
-          mode="outlined"
-          multiline
-          numberOfLines={3}
-          style={styles.input}
-        />
-        <TextInput
-          label={t('schemeLabel')}
-          value={schemeDe}
-          onChangeText={setSchemeDe}
-          mode="outlined"
-          multiline
-          numberOfLines={3}
-          style={styles.input}
-        />
 
-        <Text variant="titleSmall" style={styles.sectionLabel}>RU</Text>
-        <TextInput
-          label={t('danceName')}
-          value={nameRu}
-          onChangeText={setNameRu}
-          mode="outlined"
-          style={styles.input}
-        />
-        <TextInput
-          label={t('descriptionLabel')}
-          value={descRu}
-          onChangeText={setDescRu}
-          mode="outlined"
-          multiline
-          numberOfLines={3}
-          style={styles.input}
-        />
-        <TextInput
-          label={t('schemeLabel')}
-          value={schemeRu}
-          onChangeText={setSchemeRu}
-          mode="outlined"
-          multiline
-          numberOfLines={3}
-          style={styles.input}
-        />
+        {/* DE block */}
+        <View style={styles.langBlock}>
+          <Text style={styles.langLabel}>DE</Text>
+          <TextInput label={t('danceName')} value={nameDe} onChangeText={setNameDe} {...inputProps} />
+          <TextInput label={t('descriptionLabel')} value={descDe} onChangeText={setDescDe}
+            multiline numberOfLines={3} {...inputProps} />
+          <TextInput label={t('schemeLabel')} value={schemeDe} onChangeText={setSchemeDe}
+            multiline numberOfLines={3} {...inputProps} />
+        </View>
 
-        <Text variant="titleSmall" style={styles.sectionLabel}>{t('difficulty')}</Text>
+        <Divider style={styles.divider} />
+
+        {/* RU block */}
+        <View style={styles.langBlock}>
+          <Text style={styles.langLabel}>RU</Text>
+          <TextInput label={t('danceName')} value={nameRu} onChangeText={setNameRu} {...inputProps} />
+          <TextInput label={t('descriptionLabel')} value={descRu} onChangeText={setDescRu}
+            multiline numberOfLines={3} {...inputProps} />
+          <TextInput label={t('schemeLabel')} value={schemeRu} onChangeText={setSchemeRu}
+            multiline numberOfLines={3} {...inputProps} />
+        </View>
+
+        <Divider style={styles.divider} />
+
+        {/* Difficulty */}
+        <Text style={styles.fieldLabel}>{t('difficulty')}</Text>
         <Menu
           visible={diffMenuVisible}
           onDismiss={() => setDiffMenuVisible(false)}
           anchor={
-            <Button mode="outlined" onPress={() => setDiffMenuVisible(true)} style={styles.input}>
+            <Button mode="outlined" onPress={() => setDiffMenuVisible(true)}
+              style={styles.menuBtn} textColor={difficulty ? Colors.foreground : Colors.mutedForeground}>
               {difficulty ? t(difficulty as any) : t('selectDifficulty')}
             </Button>
           }
         >
-          <Menu.Item title={t('selectDifficulty')} onPress={() => { setDifficulty(''); setDiffMenuVisible(false) }} />
+          <Menu.Item title={t('selectDifficulty')} onPress={() => { setDifficulty(''); setDiffMenuVisible(false) }}
+            titleStyle={{ color: Colors.mutedForeground }} />
           {DIFFICULTIES.map(d => (
-            <Menu.Item key={d} title={t(d)} onPress={() => { setDifficulty(d); setDiffMenuVisible(false) }} />
+            <Menu.Item key={d} title={t(d)} onPress={() => { setDifficulty(d); setDiffMenuVisible(false) }}
+              titleStyle={{ color: Colors.foreground }} />
           ))}
         </Menu>
 
-        <TextInput
-          label={t('originLabel')}
-          value={origin}
-          onChangeText={setOrigin}
-          mode="outlined"
-          style={styles.input}
-          placeholder={t('originPlaceholder')}
-        />
+        <Divider style={styles.divider} />
 
-        <Text variant="titleSmall" style={styles.sectionLabel}>{t('watchVideo')}</Text>
-        {videos.map((v, idx) => (
-          <Card key={idx} style={styles.videoCard} mode="outlined">
-            <Card.Content style={styles.videoCardContent}>
-              <Text variant="bodySmall" style={{ flex: 1 }} numberOfLines={1}>{v.url}</Text>
-              <IconButton icon="delete" iconColor="red" size={16} onPress={() => removeVideo(idx)} />
+        {/* Videos */}
+        <Text style={styles.sectionHeader}>{t('watchVideo')}</Text>
+        {uploadedVideos.map((v, idx) => (
+          <Card key={idx} style={styles.itemCard} mode="outlined">
+            <Card.Content style={styles.itemCardRow}>
+              <Text variant="bodySmall" style={styles.itemUrl} numberOfLines={1}>
+                {v.localUri ? `📎 ${v.url}` : v.url}
+              </Text>
+              <IconButton icon="delete" iconColor={Colors.destructive} size={16}
+                onPress={() => setUploadedVideos(prev => prev.filter((_, i) => i !== idx))} />
             </Card.Content>
           </Card>
         ))}
-
-        <View style={styles.addVideoRow}>
-          <SegmentedButtons
-            value={newVideoType}
-            onValueChange={v => setNewVideoType(v as any)}
-            buttons={[
-              { value: 'youtube', label: 'YouTube' },
-              { value: 'uploaded', label: 'URL' },
-            ]}
-            style={styles.segmented}
-          />
+        <SegmentedButtons
+          value={newVideoType}
+          onValueChange={v => setNewVideoType(v as any)}
+          buttons={[
+            { value: 'youtube', label: 'YouTube', style: newVideoType === 'youtube' ? styles.segActive : styles.segInactive },
+            { value: 'uploaded', label: t('videoFile'), style: newVideoType === 'uploaded' ? styles.segActive : styles.segInactive },
+          ]}
+          style={styles.segmented}
+        />
+        {newVideoType === 'youtube' ? (
           <TextInput
-            label={newVideoType === 'youtube' ? t('youtubeUrl') : t('videoUrl')}
-            value={newVideoUrl}
-            onChangeText={setNewVideoUrl}
-            mode="outlined"
-            style={styles.videoInput}
-            placeholder={newVideoType === 'youtube' ? t('youtubePlaceholder') : t('videoPlaceholder')}
+            label={t('youtubeUrl')}
+            value={youtubeUrl}
+            onChangeText={setYoutubeUrl}
+            placeholder={t('youtubePlaceholder')}
+            {...inputProps}
+            style={[styles.input, { marginBottom: 0 }]}
           />
-          <Button mode="outlined" onPress={addVideo} disabled={!newVideoUrl.trim()}>
-            +
+        ) : (
+          <Button mode="outlined" icon="folder-open" onPress={pickVideoFile}
+            style={[styles.pickBtn, { marginBottom: 0 }]} textColor={Colors.primary}>
+            {t('selectVideo')}
+          </Button>
+        )}
+
+        <Divider style={styles.divider} />
+
+        {/* Figures */}
+        <Text style={styles.sectionHeader}>{t('figures')}</Text>
+        {figures.map((fig, idx) => (
+          <Card key={idx} style={styles.figureCard} mode="outlined">
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>{t('figure')} {idx + 1}</Text>
+                <IconButton icon="delete" iconColor={Colors.destructive} size={16}
+                  onPress={() => setFigures(prev => prev.filter((_, i) => i !== idx))} />
+              </View>
+              <TextInput
+                label={`${t('schemeLabel')} (DE)`}
+                value={fig.scheme_de}
+                onChangeText={v => updateFigure(idx, { scheme_de: v })}
+                multiline numberOfLines={2}
+                {...inputProps}
+              />
+              <TextInput
+                label={`${t('schemeLabel')} (RU)`}
+                value={fig.scheme_ru}
+                onChangeText={v => updateFigure(idx, { scheme_ru: v })}
+                multiline numberOfLines={2}
+                {...inputProps}
+              />
+              <SegmentedButtons
+                value={fig.videoType}
+                onValueChange={v => updateFigure(idx, { videoType: v as any, videoUrl: '', videoLocalUri: undefined, videoMimeType: undefined })}
+                buttons={[
+                  { value: 'youtube', label: 'YouTube', style: fig.videoType === 'youtube' ? styles.segActive : styles.segInactive },
+                  { value: 'uploaded', label: t('videoFile'), style: fig.videoType === 'uploaded' ? styles.segActive : styles.segInactive },
+                ]}
+                style={styles.segmented}
+              />
+              {fig.videoType === 'youtube' ? (
+                <TextInput
+                  label={t('youtubeUrl')}
+                  value={fig.videoUrl}
+                  onChangeText={v => updateFigure(idx, { videoUrl: v })}
+                  placeholder={t('youtubePlaceholder')}
+                  {...inputProps}
+                  style={[styles.input, { marginBottom: 0 }]}
+                />
+              ) : (
+                <>
+                  {fig.videoLocalUri ? (
+                    <Text style={styles.uploadedNote}>📎 {fig.videoUrl}</Text>
+                  ) : null}
+                  <Button mode="outlined" icon="folder-open" onPress={() => pickFigureVideo(idx)}
+                    style={[styles.pickBtn, { marginBottom: 0 }]} textColor={Colors.primary}>
+                    {fig.videoLocalUri ? t('videoUploaded') : t('selectVideo')}
+                  </Button>
+                </>
+              )}
+            </Card.Content>
+          </Card>
+        ))}
+        <Button mode="outlined" icon="plus" onPress={addFigure}
+          style={styles.addSectionBtn} textColor={Colors.primary}>
+          {t('addFigure')}
+        </Button>
+
+        <Divider style={styles.divider} />
+
+        {/* Tutorials */}
+        <Text style={styles.sectionHeader}>{t('tutorials')}</Text>
+        {selectedTutorials.map((tut, idx) => (
+          <Card key={tut.id} style={styles.itemCard} mode="outlined">
+            <Card.Content style={styles.itemCardRow}>
+              <Text variant="bodySmall" style={styles.itemUrl} numberOfLines={1}>
+                {(language === 'de' ? tut.title_de : tut.title_ru) ?? ''}
+              </Text>
+              <IconButton icon="delete" iconColor={Colors.destructive} size={16}
+                onPress={() => setSelectedTutorials(prev => prev.filter((_, i) => i !== idx))} />
+            </Card.Content>
+          </Card>
+        ))}
+        <Button mode="outlined" icon="magnify" onPress={() => setShowTutorialPicker(true)}
+          style={styles.addSectionBtn} textColor={Colors.primary}>
+          {t('chooseTutorial')}
+        </Button>
+
+        <Divider style={styles.divider} />
+
+        {/* Music tracks */}
+        <Text style={styles.sectionHeader}>{t('musicTracks')}</Text>
+        {music.map((track, idx) => (
+          <Card key={idx} style={styles.figureCard} mode="outlined">
+            <Card.Content>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>{track.title || t('addMusicTrack')}</Text>
+                <IconButton icon="delete" iconColor={Colors.destructive} size={16}
+                  onPress={() => setMusic(prev => prev.filter((_, i) => i !== idx))} />
+              </View>
+              <TextInput label={t('title')} value={track.title}
+                onChangeText={v => updateMusic(idx, 'title', v)} {...inputProps} />
+              {(track.audioLocalUri || track.audioUrl) ? (
+                <Text style={styles.uploadedNote}>
+                  {track.audioLocalUri ? `📎 ${track.audioUrl}` : `🎵 ${track.audioUrl}`}
+                </Text>
+              ) : null}
+              <Button mode="outlined" icon="music" onPress={() => pickAudio(idx)}
+                style={styles.pickBtn} textColor={Colors.primary}>
+                {track.audioLocalUri ? t('audioUploaded') : t('selectAudio')}
+              </Button>
+            </Card.Content>
+          </Card>
+        ))}
+        <View style={styles.musicBtns}>
+          <Button mode="outlined" icon="music" onPress={() => setShowMusicPicker(true)}
+            style={[styles.addSectionBtn, { flex: 1 }]} textColor={Colors.primary}>
+            {t('chooseMusicTrack')}
+          </Button>
+          <Button mode="outlined" icon="plus"
+            onPress={() => setMusic(prev => [...prev, { title: '', artist: '', tempo: '', audioUrl: '' }])}
+            style={[styles.addSectionBtn, { flex: 1 }]} textColor={Colors.primary}>
+            {t('addMusicTrack')}
           </Button>
         </View>
 
-        <Button
-          mode="contained"
-          onPress={handleSubmit}
-          loading={isSaving}
-          disabled={isSaving}
-          style={styles.submitBtn}
-        >
-          {isSaving ? t('saving') : isEdit ? t('update') : t('create')}
+        <Button mode="contained" onPress={handleSubmit} loading={isSaving} disabled={isSaving}
+          style={styles.submitBtn} buttonColor={Colors.primary} textColor={Colors.primaryForeground}>
+          {isSaving ? (uploading ? t('uploading') : t('saving')) : isEdit ? t('update') : t('create')}
         </Button>
       </ScrollView>
-      <Snackbar visible={!!error} onDismiss={() => setError('')} duration={4000}>{error}</Snackbar>
+
+      {/* Tutorial Picker Modal */}
+      <Modal
+        visible={showTutorialPicker}
+        animationType="slide"
+        onRequestClose={() => { setShowTutorialPicker(false); setTutorialSearch('') }}
+      >
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>{t('tutorials')}</Text>
+            <IconButton icon="close"
+              onPress={() => { setShowTutorialPicker(false); setTutorialSearch('') }} />
+          </View>
+          <Searchbar
+            value={tutorialSearch}
+            onChangeText={setTutorialSearch}
+            style={styles.pickerSearch}
+            placeholder={t('searchTutorials')}
+            inputStyle={{ color: Colors.foreground }}
+            iconColor={Colors.mutedForeground}
+            placeholderTextColor={Colors.mutedForeground}
+          />
+          <FlatList
+            data={filteredTutorials}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => {
+              const title = (language === 'de' ? item.title_de : item.title_ru) ?? ''
+              const already = selectedTutorials.some(s => s.id === item.id)
+              return (
+                <List.Item
+                  title={title}
+                  description={item.type}
+                  titleStyle={{ color: already ? Colors.primary : Colors.foreground, fontFamily: Fonts.body }}
+                  descriptionStyle={{ color: Colors.mutedForeground }}
+                  onPress={() => {
+                    if (!already) setSelectedTutorials(prev => [...prev, item])
+                    setShowTutorialPicker(false)
+                    setTutorialSearch('')
+                  }}
+                  right={() => already ? <List.Icon icon="check" color={Colors.primary} /> : null}
+                  style={styles.pickerItem}
+                />
+              )
+            }}
+            ItemSeparatorComponent={() => <Divider style={{ backgroundColor: Colors.border }} />}
+          />
+        </View>
+      </Modal>
+
+      {/* Music Picker Modal */}
+      <Modal
+        visible={showMusicPicker}
+        animationType="slide"
+        onRequestClose={() => { setShowMusicPicker(false); setMusicSearch('') }}
+      >
+        <View style={styles.pickerContainer}>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>{t('musicTracks')}</Text>
+            <IconButton icon="close"
+              onPress={() => { setShowMusicPicker(false); setMusicSearch('') }} />
+          </View>
+          <Searchbar
+            value={musicSearch}
+            onChangeText={setMusicSearch}
+            style={styles.pickerSearch}
+            placeholder={t('searchMusic')}
+            inputStyle={{ color: Colors.foreground }}
+            iconColor={Colors.mutedForeground}
+            placeholderTextColor={Colors.mutedForeground}
+          />
+          <FlatList
+            data={filteredMusic}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => {
+              const already = music.some(m => m.id === item.id)
+              return (
+                <List.Item
+                  title={item.title}
+                  description={item.artist ?? undefined}
+                  titleStyle={{ color: already ? Colors.primary : Colors.foreground, fontFamily: Fonts.body }}
+                  descriptionStyle={{ color: Colors.mutedForeground }}
+                  onPress={() => {
+                    if (!already) setMusic(prev => [...prev, { id: item.id, title: item.title, artist: item.artist ?? '', tempo: item.tempo?.toString() ?? '', audioUrl: item.audio_url ?? '' }])
+                    setShowMusicPicker(false)
+                    setMusicSearch('')
+                  }}
+                  right={() => already ? <List.Icon icon="check" color={Colors.primary} /> : null}
+                  style={styles.pickerItem}
+                />
+              )
+            }}
+            ItemSeparatorComponent={() => <Divider style={{ backgroundColor: Colors.border }} />}
+          />
+        </View>
+      </Modal>
+
+      <Snackbar visible={!!error} onDismiss={() => setError('')} duration={4000}
+        style={{ backgroundColor: Colors.destructive }}>{error}</Snackbar>
     </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f6f5f5' },
+  container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 48 },
-  sectionLabel: { fontWeight: 'bold', color: '#6750a4', marginTop: 12, marginBottom: 4 },
-  input: { marginBottom: 12 },
-  videoCard: { marginBottom: 8, backgroundColor: '#fff' },
-  videoCardContent: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
-  addVideoRow: { gap: 8, marginBottom: 16 },
+  langBlock: { marginBottom: 4 },
+  langLabel: { fontSize: 11, fontFamily: Fonts.heading, color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 },
+  fieldLabel: { fontSize: 11, fontFamily: Fonts.heading, color: Colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  sectionHeader: { fontSize: 13, fontFamily: Fonts.bodySemiBold, color: Colors.foreground, marginBottom: 10 },
+  input: { marginBottom: 12, backgroundColor: Colors.card },
+  divider: { backgroundColor: Colors.border, marginVertical: 16 },
+  menuBtn: { borderColor: Colors.border, borderRadius: 4, justifyContent: 'flex-start' },
+  itemCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border },
+  itemCardRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  itemUrl: { flex: 1, color: Colors.mutedForeground },
   segmented: { marginBottom: 8 },
-  videoInput: { marginBottom: 8 },
-  submitBtn: { marginTop: 8 },
+  segActive: { backgroundColor: Colors.primary },
+  segInactive: { backgroundColor: Colors.card },
+  pickBtn: { borderColor: Colors.border, borderRadius: 4, marginBottom: 8 },
+  figureCard: { marginBottom: 12, backgroundColor: Colors.card, borderColor: Colors.border },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  cardTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, fontSize: 13 },
+  addSectionBtn: { borderColor: Colors.primary, borderRadius: 4, marginBottom: 4 },
+  uploadedNote: { color: Colors.mutedForeground, fontSize: 12, marginBottom: 8 },
+  musicBtns: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  submitBtn: { marginTop: 24, borderRadius: 6 },
+  // Pickers
+  pickerContainer: { flex: 1, backgroundColor: Colors.background },
+  pickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingLeft: 16, paddingTop: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  pickerTitle: { fontFamily: Fonts.bodySemiBold, fontSize: 17, color: Colors.foreground },
+  pickerSearch: { margin: 12, elevation: 0, backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border, borderRadius: 6 },
+  pickerItem: { backgroundColor: Colors.background },
 })

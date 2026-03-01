@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useColorScheme } from 'react-native'
+import { useColorScheme, View } from 'react-native'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PaperProvider } from 'react-native-paper'
@@ -7,6 +7,22 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { useAuth } from '@/hooks/useAuth'
 import { lightTheme, darkTheme } from '@/lib/theme'
+import { Colors } from '@/lib/colors'
+import {
+  useFonts,
+  LibreBaskerville_400Regular,
+  LibreBaskerville_400Regular_Italic,
+  LibreBaskerville_700Bold,
+} from '@expo-google-fonts/libre-baskerville'
+import {
+  Lora_400Regular,
+  Lora_500Medium,
+  Lora_600SemiBold,
+  Lora_700Bold,
+} from '@expo-google-fonts/lora'
+import * as SplashScreen from 'expo-splash-screen'
+
+SplashScreen.preventAutoHideAsync()
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +51,24 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   const colorScheme = useColorScheme()
   const theme = colorScheme === 'dark' ? darkTheme : lightTheme
+
+  const [fontsLoaded] = useFonts({
+    LibreBaskerville_400Regular,
+    LibreBaskerville_400Regular_Italic,
+    LibreBaskerville_700Bold,
+    Lora_400Regular,
+    Lora_500Medium,
+    Lora_600SemiBold,
+    Lora_700Bold,
+  })
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync()
+  }, [fontsLoaded])
+
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: Colors.background }} />
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

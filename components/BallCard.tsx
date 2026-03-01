@@ -2,6 +2,8 @@ import { StyleSheet, View } from 'react-native'
 import { Card, Text } from 'react-native-paper'
 import { format } from 'date-fns'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 import type { BallWithSections } from '@/types/database'
 
 interface Props {
@@ -14,9 +16,7 @@ export default function BallCard({ ball, onPress }: Props) {
   const name = (language === 'de' ? ball.name_de : ball.name_ru) ?? ball.name ?? ''
   const place = (language === 'de' ? ball.place_de : ball.place_ru) ?? ball.place ?? ''
   const formattedDate = ball.date ? format(new Date(ball.date), 'dd.MM.yyyy') : ''
-
-  const danceCount = (ball.ball_sections ?? [])
-    .flatMap(s => s.section_dances ?? []).length
+  const danceCount = (ball.ball_sections ?? []).flatMap(s => s.section_dances ?? []).length
 
   return (
     <Card style={styles.card} mode="elevated" onPress={onPress}>
@@ -33,8 +33,8 @@ export default function BallCard({ ball, onPress }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: 8, backgroundColor: '#fff' },
-  name: { fontWeight: 'bold', marginBottom: 4 },
+  card: { marginBottom: 8, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
+  name: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, marginBottom: 4 },
   meta: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  metaText: { opacity: 0.6 },
+  metaText: { color: Colors.mutedForeground },
 })

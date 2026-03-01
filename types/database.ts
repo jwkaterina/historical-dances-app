@@ -102,6 +102,25 @@ export interface BallWithSections extends Ball {
   ball_sections: BallSection[]
 }
 
+export interface TutorialCategory {
+  id: string
+  name_de: string
+  name_ru: string
+  created_at: string
+}
+
+export interface Tutorial {
+  id: string
+  title_de: string
+  title_ru: string
+  type: 'video' | 'pdf' | 'image'
+  video_type: 'youtube' | 'uploaded' | null
+  url: string
+  category_id: string | null
+  created_at: string
+  tutorial_categories?: TutorialCategory | null
+}
+
 export type SectionEntry =
   | { kind: 'dance'; order_index: number; danceId: string; musicIds?: string[] }
   | { kind: 'text'; order_index: number; content_de: string; content_ru: string }

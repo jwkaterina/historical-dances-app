@@ -14,7 +14,10 @@ export async function fetchDances(search?: string): Promise<Dance[]> {
 
   const { data, error } = await query
   if (error) throw error
-  return (data ?? []) as Dance[]
+  return (data ?? []).map((d: any) => ({
+    ...d,
+    difficulty: d.difficulty ? d.difficulty.toLowerCase() : null,
+  })) as Dance[]
 }
 
 export async function fetchDanceById(id: string): Promise<DanceWithDetails | null> {
@@ -38,7 +41,8 @@ export async function fetchDanceById(id: string): Promise<DanceWithDetails | nul
     .single()
 
   if (error) return null
-  return data as unknown as DanceWithDetails
+  const d = data as any
+  return { ...d, difficulty: d.difficulty ? d.difficulty.toLowerCase() : null } as unknown as DanceWithDetails
 }
 
 export async function createDance(danceData: Partial<Dance>): Promise<Dance> {
@@ -113,6 +117,27 @@ export async function deleteDance(id: string): Promise<{ success: boolean; code?
   return { success: true }
 }
 
+export async function syncDanceFigures(
+  danceId: string,
+  figures: Array<{ scheme_de: string; scheme_ru: string; videoType?: string; videoUrl?: string }>
+): Promise<void> {
+  await supabase.from('dance_figures').delete().eq('dance_id', danceId)
+  for (let i = 0; i < figures.length; i++) {
+    const f = figures[i]
+    const { data: fig, error } = await supabase
+      .from('dance_figures')
+      .insert({ dance_id: danceId, scheme_de: f.scheme_de || null, scheme_ru: f.scheme_ru || null, order_index: i })
+      .select('id')
+      .single()
+    if (error) throw error
+    if (fig && f.videoUrl?.trim()) {
+      await supabase.from('figure_videos').insert({
+        figure_id: fig.id, video_type: f.videoType ?? 'youtube', url: f.videoUrl.trim(), order_index: 0,
+      })
+    }
+  }
+}
+
 export async function syncDanceVideos(danceId: string, videos: Array<{ id?: string; video_type: string; url: string }>) {
   const { data: existing } = await supabase
     .from('dance_videos')
@@ -134,6 +159,34 @@ export async function syncDanceVideos(danceId: string, videos: Array<{ id?: stri
     } else {
       await supabase.from('dance_videos').insert({ dance_id: danceId, video_type: v.video_type, url: v.url, order_index: i })
     }
+  }
+}
+
+export async function fetchDanceTutorials(danceId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from('dance_tutorials')
+    .select('tutorial_id')
+    .eq('dance_id', danceId)
+  return (data ?? []).map((r: any) => r.tutorial_id)
+}
+
+export async function syncDanceTutorials(danceId: string, tutorialIds: string[]): Promise<void> {
+  const { data: existing } = await supabase
+    .from('dance_tutorials')
+    .select('tutorial_id')
+    .eq('dance_id', danceId)
+
+  const currentIds = new Set((existing || []).map((r: any) => r.tutorial_id))
+  const targetIds = new Set(tutorialIds)
+
+  const toDelete = Array.from(currentIds).filter(id => !targetIds.has(id))
+  const toAdd = tutorialIds.filter(id => !currentIds.has(id))
+
+  if (toDelete.length > 0) {
+    await supabase.from('dance_tutorials').delete().eq('dance_id', danceId).in('tutorial_id', toDelete)
+  }
+  for (const tutorialId of toAdd) {
+    await supabase.from('dance_tutorials').insert({ dance_id: danceId, tutorial_id: tutorialId })
   }
 }
 

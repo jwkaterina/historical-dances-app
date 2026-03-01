@@ -134,6 +134,8 @@ export const translations = {
 
     musicTracks: "Musiktitel",
     addMusicTrack: "Musiktitel hinzufügen",
+    chooseMusicTrack: "Musiktitel auswählen",
+    chooseTutorial: "Tutorial auswählen",
     audio: "Audiodatei",
     selectAudio: "Audio auswählen",
     audioUploaded: "Audio hochgeladen",
@@ -200,6 +202,18 @@ export const translations = {
     language: "Sprache",
     account: "Konto",
     user: "Benutzer",
+
+    tutorials: "Anleitungen",
+    tutorialsTitle: "Anleitungen",
+    searchTutorials: "Anleitungen durchsuchen...",
+    noTutorialsFound: "Keine Tutorials gefunden",
+    allCategories: "Alle Kategorien",
+    tutorialNotFound: "Tutorial nicht gefunden",
+    openVideo: "Video öffnen",
+    openPdf: "PDF öffnen",
+    typeVideo: "Video",
+    typePdf: "PDF",
+    typeImage: "Bild",
   },
   ru: {
     appName: "Исторические танцы",
@@ -334,6 +348,8 @@ export const translations = {
 
     musicTracks: "Музыкальные треки",
     addMusicTrack: "Добавить музыкальный трек",
+    chooseMusicTrack: "Выбрать музыкальный трек",
+    chooseTutorial: "Выбрать обучающий материал",
     audio: "Аудиофайл",
     selectAudio: "Выбрать аудио",
     audioUploaded: "Аудио загружено",
@@ -400,6 +416,18 @@ export const translations = {
     language: "Язык",
     account: "Аккаунт",
     user: "Пользователь",
+
+    tutorials: "Обучение",
+    tutorialsTitle: "Обучающие материалы",
+    searchTutorials: "Поиск обучающих материалов...",
+    noTutorialsFound: "Обучающие материалы не найдены",
+    allCategories: "Все категории",
+    tutorialNotFound: "Обучающий материал не найден",
+    openVideo: "Открыть видео",
+    openPdf: "Открыть PDF",
+    typeVideo: "Видео",
+    typePdf: "PDF",
+    typeImage: "Изображение",
   },
 } as const
 

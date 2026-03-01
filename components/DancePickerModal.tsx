@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { FlatList, StyleSheet, View } from 'react-native'
+import { FlatList, StyleSheet } from 'react-native'
 import { Modal, Portal, Searchbar, Text, TouchableRipple, Divider } from 'react-native-paper'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 
 interface DanceOption {
   id: string
@@ -34,17 +36,18 @@ export default function DancePickerModal({ dances, onSelect, onDismiss }: Props)
           value={search}
           onChangeText={setSearch}
           style={styles.searchbar}
+          inputStyle={{ color: Colors.foreground }}
         />
         <FlatList
           data={filtered}
           keyExtractor={item => item.id}
           style={styles.list}
-          ItemSeparatorComponent={() => <Divider />}
+          ItemSeparatorComponent={() => <Divider style={{ backgroundColor: Colors.border }} />}
           renderItem={({ item }) => {
             const name = (language === 'de' ? item.name_de : item.name_ru) ?? item.name ?? ''
             return (
-              <TouchableRipple onPress={() => onSelect(item.id)} style={styles.item}>
-                <Text variant="bodyMedium">{name}</Text>
+              <TouchableRipple onPress={() => onSelect(item.id)} style={styles.item} rippleColor={Colors.accent}>
+                <Text variant="bodyMedium" style={styles.itemText}>{name}</Text>
               </TouchableRipple>
             )
           }}
@@ -59,15 +62,16 @@ export default function DancePickerModal({ dances, onSelect, onDismiss }: Props)
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.card,
     margin: 24,
-    borderRadius: 12,
+    borderRadius: 8,
     maxHeight: '80%',
     padding: 16,
   },
-  title: { fontWeight: 'bold', marginBottom: 12 },
-  searchbar: { marginBottom: 8, elevation: 0 },
+  title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, marginBottom: 12 },
+  searchbar: { marginBottom: 8, elevation: 0, backgroundColor: Colors.muted },
   list: { maxHeight: 400 },
   item: { padding: 16 },
-  empty: { padding: 16, opacity: 0.6, textAlign: 'center' },
+  itemText: { color: Colors.foreground },
+  empty: { padding: 16, color: Colors.mutedForeground, textAlign: 'center' },
 })
