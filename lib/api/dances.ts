@@ -31,10 +31,13 @@ export async function fetchDanceById(id: string): Promise<DanceWithDetails | nul
       dance_videos ( id, video_type, url, order_index ),
       dance_figures (
         id, scheme_de, scheme_ru, order_index,
-        figure_videos: figure_videos ( id, video_type, url, order_index )
+        figure_videos ( id, video_type, url, order_index )
       ),
       dance_music (
         music: music_id ( id, title, artist, tempo, genre, audio_url )
+      ),
+      dance_tutorials (
+        tutorials:tutorial_id ( id, title_de, title_ru, type, video_type, url )
       )
     `)
     .eq('id', id)

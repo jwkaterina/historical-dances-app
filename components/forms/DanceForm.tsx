@@ -125,7 +125,7 @@ export default function DanceForm({ danceId }: Props) {
       setFigures(
         [...(existing.dance_figures ?? [])].sort((a, b) => a.order_index - b.order_index)
           .map(f => {
-            const firstVideo = [...(f.videos ?? [])].sort((a, b) => a.order_index - b.order_index)[0]
+            const firstVideo = [...(f.figure_videos ?? [])].sort((a, b) => a.order_index - b.order_index)[0]
             return {
               scheme_de: f.scheme_de ?? '',
               scheme_ru: f.scheme_ru ?? '',
@@ -215,10 +215,12 @@ export default function DanceForm({ danceId }: Props) {
       scheme_de: schemeDe || null, scheme_ru: schemeRu || null,
       difficulty: (difficulty as any) || null,
     }
+    let step = ''
     try {
       setUploading(true)
 
       // Upload figure video files
+      step = 'upload figure videos'
       const resolvedFigures = await Promise.all(figures.map(async (f) => {
         if (f.videoLocalUri && f.videoMimeType) {
           const ext = f.videoMimeType.split('/')[1] ?? 'mp4'
@@ -229,6 +231,7 @@ export default function DanceForm({ danceId }: Props) {
       }))
 
       // Upload new video files
+      step = 'upload dance videos'
       const resolvedUploads = await Promise.all(uploadedVideos.map(async (v) => {
         if (v.localUri && v.mimeType) {
           const ext = v.mimeType.split('/')[1] ?? 'mp4'
@@ -245,15 +248,19 @@ export default function DanceForm({ danceId }: Props) {
 
       let finalDanceId: string
       if (isEdit && danceId) {
+        step = 'update dance'
         await updateDance.mutateAsync({ id: danceId, data: danceData })
         finalDanceId = danceId
       } else {
+        step = 'create dance'
         const created = await createDance.mutateAsync(danceData)
         finalDanceId = created.id
       }
 
+      step = 'sync videos'
       await syncVideos.mutateAsync({ danceId: finalDanceId, videos: allVideos })
 
+      step = 'sync figures'
       await syncFigures.mutateAsync({
         danceId: finalDanceId,
         figures: resolvedFigures.map(f => ({
@@ -264,11 +271,13 @@ export default function DanceForm({ danceId }: Props) {
         })),
       })
 
+      step = 'sync tutorials'
       await syncTutorials.mutateAsync({
         danceId: finalDanceId,
         tutorialIds: selectedTutorials.map(t => t.id),
       })
 
+      step = 'upload audio'
       const resolvedMusic = await Promise.all(music.map(async (m) => {
         if (m.id) return m
         if (m.audioLocalUri && m.audioMimeType) {
@@ -279,6 +288,7 @@ export default function DanceForm({ danceId }: Props) {
         return m
       }))
 
+      step = 'create music tracks'
       const musicIds = await Promise.all(resolvedMusic.map(async (m) => {
         if (m.id) return m.id
         const track = await createMusicTrack({
@@ -290,10 +300,11 @@ export default function DanceForm({ danceId }: Props) {
         return track.id
       }))
 
+      step = 'sync music links'
       await syncMusicLinks.mutateAsync({ danceId: finalDanceId, musicIds })
       router.back()
     } catch (e: any) {
-      setError(e.message ?? t('error'))
+      setError(`[${step}] ${e.message ?? t('error')}`)
     } finally {
       setUploading(false)
     }

@@ -82,6 +82,7 @@ export default function RootLayout() {
                 <Stack.Screen name="dance/[id]" options={{ headerShown: false }} />
                 <Stack.Screen name="dance/create" options={{ headerShown: false }} />
                 <Stack.Screen name="dance/edit/[id]" options={{ headerShown: false }} />
+                <Stack.Screen name="webview" options={{ headerShown: false }} />
               </Stack>
             </AuthGuard>
           </SafeAreaProvider>

@@ -10,7 +10,7 @@ import { Fonts } from '@/lib/fonts'
 import AudioPlayer from '@/components/AudioPlayer'
 import VideoPlayer from '@/components/VideoPlayer'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import type { DanceVideo, DanceFigure, MusicTrack } from '@/types/database'
+import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/database'
 
 
 export default function DanceDetailScreen() {
@@ -34,6 +34,7 @@ export default function DanceDetailScreen() {
   const videos = [...(dance.dance_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
   const figures = [...(dance.dance_figures ?? [])].sort((a, b) => a.order_index - b.order_index)
   const musicTracks = (dance.dance_music ?? []).map((dm: any) => dm.music).filter(Boolean) as MusicTrack[]
+  const tutorials = (dance.dance_tutorials ?? []).map((dt: any) => dt.tutorials).filter(Boolean) as Tutorial[]
 
   const handleDelete = async () => {
     const result = await deleteMutation.mutateAsync(dance.id)
@@ -95,13 +96,39 @@ export default function DanceDetailScreen() {
             <Divider style={styles.divider} />
             {figures.map((figure: DanceFigure, idx: number) => {
               const figScheme = (language === 'de' ? figure.scheme_de : figure.scheme_ru) ?? ''
-              const figVideos = [...(figure.videos ?? [])].sort((a, b) => a.order_index - b.order_index)
+              const figVideos = [...(figure.figure_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
               return (
                 <Card key={figure.id} style={styles.figureCard} mode="outlined">
                   <Card.Content>
                     <Text variant="labelMedium" style={styles.figureTitle}>{t('figure')} {idx + 1}</Text>
                     {figScheme ? <Text variant="bodyMedium" style={styles.schemeText}>{figScheme}</Text> : null}
                     {figVideos.map(v => <VideoPlayer key={v.id} video={v} style={styles.videoPlayer} />)}
+                  </Card.Content>
+                </Card>
+              )
+            })}
+          </View>
+        )}
+
+        {tutorials.length > 0 && (
+          <View style={styles.section}>
+            <Text variant="titleSmall" style={styles.sectionTitle}>{t('tutorials')}</Text>
+            <Divider style={styles.divider} />
+            {tutorials.map((tut: Tutorial) => {
+              const title = (language === 'de' ? tut.title_de : tut.title_ru) ?? ''
+              const icon = tut.type === 'pdf' ? 'file-pdf-box' : tut.type === 'image' ? 'image' : 'play-circle-outline'
+              return (
+                <Card key={tut.id} style={styles.tutorialCard} mode="outlined"
+                  onPress={() => router.push({ pathname: '/webview', params: { url: encodeURIComponent(tut.url), title } })}>
+                  <Card.Content style={styles.tutorialRow}>
+                    <Chip compact style={styles.typeBadge} textStyle={styles.typeBadgeText}>
+                      {tut.type}
+                    </Chip>
+                    <Text variant="bodyMedium" style={styles.tutorialTitle} numberOfLines={2}>{title}</Text>
+                    <Button compact icon={icon} mode="text" textColor={Colors.primary}
+                      onPress={() => router.push({ pathname: '/webview', params: { url: encodeURIComponent(tut.url), title } })}>
+                      {t('open')}
+                    </Button>
                   </Card.Content>
                 </Card>
               )
@@ -180,6 +207,11 @@ const styles = StyleSheet.create({
   musicArtist: { color: Colors.mutedForeground },
   musicMeta: { color: Colors.mutedForeground },
   emptyText: { color: Colors.mutedForeground, fontStyle: 'italic' },
+  tutorialCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border },
+  tutorialRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
+  tutorialTitle: { flex: 1, color: Colors.foreground, fontFamily: Fonts.body },
+  typeBadge: { backgroundColor: Colors.secondary, borderRadius: 4 },
+  typeBadgeText: { color: Colors.secondaryForeground, fontSize: 11, fontFamily: Fonts.body },
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   actionBtn: { flex: 1, borderColor: Colors.border },
   playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, elevation: 8 },

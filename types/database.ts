@@ -28,7 +28,7 @@ export interface DanceFigure {
   scheme_de: string | null
   scheme_ru: string | null
   order_index: number
-  videos?: FigureVideo[]
+  figure_videos?: FigureVideo[]
 }
 
 export interface FigureVideo {
@@ -53,6 +53,7 @@ export interface DanceWithDetails extends Dance {
   dance_videos: DanceVideo[]
   dance_figures: DanceFigure[]
   dance_music: { music: MusicTrack }[]
+  dance_tutorials: { tutorials: Tutorial }[]
 }
 
 export interface Ball {

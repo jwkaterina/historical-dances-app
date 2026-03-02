@@ -1,3 +1,4 @@
+import { File as FSFile } from 'expo-file-system'
 import { supabase } from '@/lib/supabase'
 
 export async function uploadFile(
@@ -6,12 +7,13 @@ export async function uploadFile(
   uri: string,
   mimeType: string,
 ): Promise<string> {
-  const response = await fetch(uri)
-  const blob = await response.blob()
+  // expo-file-system v19 new API: File.bytes() works with content:// and file:// URIs
+  const file = new FSFile(uri)
+  const bytes = await file.bytes()
 
   const { data, error } = await supabase.storage
     .from(bucket)
-    .upload(path, blob, { contentType: mimeType, upsert: true })
+    .upload(path, bytes, { contentType: mimeType, upsert: true })
 
   if (error) throw error
 
