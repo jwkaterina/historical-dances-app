@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { FlatList, StyleSheet, View, RefreshControl } from 'react-native'
 import { Text, Searchbar, Chip, FAB, ActivityIndicator } from 'react-native-paper'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useDances } from '@/hooks/useDances'
 import { useAuth } from '@/hooks/useAuth'
@@ -19,6 +19,8 @@ export default function DancesScreen() {
   const [diffFilter, setDiffFilter] = useState<string | null>(null)
 
   const { data: dances = [], isLoading, refetch, isRefetching } = useDances()
+
+  useFocusEffect(useCallback(() => { refetch() }, []))
 
   const filtered = dances.filter((d: Dance) => {
     const name = (language === 'de' ? d.name_de : d.name_ru) ?? d.name ?? ''

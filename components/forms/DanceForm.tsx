@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Modal, FlatList, ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native'
-import { Text, TextInput, Button, SegmentedButtons, Card, IconButton, Snackbar, ActivityIndicator, Menu, Divider, Searchbar, List } from 'react-native-paper'
+import { Text, TextInput, Button, SegmentedButtons, Card, IconButton, Snackbar, ActivityIndicator, Menu, Divider, Searchbar, List, Icon } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -87,6 +87,15 @@ export default function DanceForm({ danceId }: Props) {
 
   // Figures
   const [figures, setFigures] = useState<FigureEntry[]>([])
+  const [expandedFigures, setExpandedFigures] = useState<Set<number>>(new Set())
+
+  const toggleFigure = (idx: number) => {
+    setExpandedFigures(prev => {
+      const next = new Set(prev)
+      next.has(idx) ? next.delete(idx) : next.add(idx)
+      return next
+    })
+  }
 
   // Tutorials
   const [selectedTutorials, setSelectedTutorials] = useState<Tutorial[]>([])
@@ -171,6 +180,7 @@ export default function DanceForm({ danceId }: Props) {
   }
 
   const addFigure = () => {
+    setExpandedFigures(prev => { const next = new Set(prev); next.add(figures.length); return next })
     setFigures(prev => [...prev, { scheme_de: '', scheme_ru: '', videoType: 'youtube', videoUrl: '' }])
   }
 
@@ -346,7 +356,7 @@ export default function DanceForm({ danceId }: Props) {
           <TextInput label={t('descriptionLabel')} value={descDe} onChangeText={setDescDe}
             multiline numberOfLines={3} {...inputProps} />
           <TextInput label={t('schemeLabel')} value={schemeDe} onChangeText={setSchemeDe}
-            multiline numberOfLines={3} {...inputProps} />
+            multiline {...inputProps} style={[styles.input, styles.schemeInput]} />
         </View>
 
         <Divider style={styles.divider} />
@@ -358,7 +368,7 @@ export default function DanceForm({ danceId }: Props) {
           <TextInput label={t('descriptionLabel')} value={descRu} onChangeText={setDescRu}
             multiline numberOfLines={3} {...inputProps} />
           <TextInput label={t('schemeLabel')} value={schemeRu} onChangeText={setSchemeRu}
-            multiline numberOfLines={3} {...inputProps} />
+            multiline {...inputProps} style={[styles.input, styles.schemeInput]} />
         </View>
 
         <Divider style={styles.divider} />
@@ -427,60 +437,69 @@ export default function DanceForm({ danceId }: Props) {
 
         {/* Figures */}
         <Text style={styles.sectionHeader}>{t('figures')}</Text>
-        {figures.map((fig, idx) => (
-          <Card key={idx} style={styles.figureCard} mode="outlined">
-            <Card.Content>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{t('figure')} {idx + 1}</Text>
-                <IconButton icon="delete" iconColor={Colors.destructive} size={16}
+        {figures.map((fig, idx) => {
+          const isExpanded = expandedFigures.has(idx)
+          return (
+            <Card key={idx} style={styles.figureCard} mode="outlined">
+              <View style={styles.figureAccordionHeader}>
+                <Text style={styles.figureAccordionTitle}>{t('figure')} {idx + 1}</Text>
+                <IconButton icon="delete" iconColor={Colors.destructive} size={20}
                   onPress={() => setFigures(prev => prev.filter((_, i) => i !== idx))} />
+                <IconButton icon={isExpanded ? 'chevron-up' : 'chevron-down'} iconColor={Colors.mutedForeground} size={20}
+                  onPress={() => toggleFigure(idx)} />
               </View>
-              <TextInput
-                label={`${t('schemeLabel')} (DE)`}
-                value={fig.scheme_de}
-                onChangeText={v => updateFigure(idx, { scheme_de: v })}
-                multiline numberOfLines={2}
-                {...inputProps}
-              />
-              <TextInput
-                label={`${t('schemeLabel')} (RU)`}
-                value={fig.scheme_ru}
-                onChangeText={v => updateFigure(idx, { scheme_ru: v })}
-                multiline numberOfLines={2}
-                {...inputProps}
-              />
-              <SegmentedButtons
-                value={fig.videoType}
-                onValueChange={v => updateFigure(idx, { videoType: v as any, videoUrl: '', videoLocalUri: undefined, videoMimeType: undefined })}
-                buttons={[
-                  { value: 'youtube', label: 'YouTube', style: fig.videoType === 'youtube' ? styles.segActive : styles.segInactive },
-                  { value: 'uploaded', label: t('videoFile'), style: fig.videoType === 'uploaded' ? styles.segActive : styles.segInactive },
-                ]}
-                style={styles.segmented}
-              />
-              {fig.videoType === 'youtube' ? (
-                <TextInput
-                  label={t('youtubeUrl')}
-                  value={fig.videoUrl}
-                  onChangeText={v => updateFigure(idx, { videoUrl: v })}
-                  placeholder={t('youtubePlaceholder')}
-                  {...inputProps}
-                  style={[styles.input, { marginBottom: 0 }]}
-                />
-              ) : (
-                <>
-                  {fig.videoLocalUri ? (
-                    <Text style={styles.uploadedNote}>📎 {fig.videoUrl}</Text>
-                  ) : null}
-                  <Button mode="outlined" icon="folder-open" onPress={() => pickFigureVideo(idx)}
-                    style={[styles.pickBtn, { marginBottom: 0 }]} textColor={Colors.primary}>
-                    {fig.videoLocalUri ? t('videoUploaded') : t('selectVideo')}
-                  </Button>
-                </>
+              {isExpanded && (
+                <View style={styles.figureContent}>
+                  <TextInput
+                    label={`${t('schemeLabel')} (DE)`}
+                    value={fig.scheme_de}
+                    onChangeText={v => updateFigure(idx, { scheme_de: v })}
+                    multiline
+                    {...inputProps}
+                    style={[styles.input, styles.schemeInput]}
+                  />
+                  <TextInput
+                    label={`${t('schemeLabel')} (RU)`}
+                    value={fig.scheme_ru}
+                    onChangeText={v => updateFigure(idx, { scheme_ru: v })}
+                    multiline
+                    {...inputProps}
+                    style={[styles.input, styles.schemeInput]}
+                  />
+                  <SegmentedButtons
+                    value={fig.videoType}
+                    onValueChange={v => updateFigure(idx, { videoType: v as any, videoUrl: '', videoLocalUri: undefined, videoMimeType: undefined })}
+                    buttons={[
+                      { value: 'youtube', label: 'YouTube', style: fig.videoType === 'youtube' ? styles.segActive : styles.segInactive },
+                      { value: 'uploaded', label: t('videoFile'), style: fig.videoType === 'uploaded' ? styles.segActive : styles.segInactive },
+                    ]}
+                    style={styles.segmented}
+                  />
+                  {fig.videoType === 'youtube' ? (
+                    <TextInput
+                      label={t('youtubeUrl')}
+                      value={fig.videoUrl}
+                      onChangeText={v => updateFigure(idx, { videoUrl: v })}
+                      placeholder={t('youtubePlaceholder')}
+                      {...inputProps}
+                      style={[styles.input, { marginBottom: 0 }]}
+                    />
+                  ) : (
+                    <>
+                      {fig.videoLocalUri ? (
+                        <Text style={styles.uploadedNote}>📎 {fig.videoUrl}</Text>
+                      ) : null}
+                      <Button mode="outlined" icon="folder-open" onPress={() => pickFigureVideo(idx)}
+                        style={[styles.pickBtn, { marginBottom: 0 }]} textColor={Colors.primary}>
+                        {fig.videoLocalUri ? t('videoUploaded') : t('selectVideo')}
+                      </Button>
+                    </>
+                  )}
+                </View>
               )}
-            </Card.Content>
-          </Card>
-        ))}
+            </Card>
+          )
+        })}
         <Button mode="outlined" icon="plus" onPress={addFigure}
           style={styles.addSectionBtn} textColor={Colors.primary}>
           {t('addFigure')}
@@ -520,10 +539,8 @@ export default function DanceForm({ danceId }: Props) {
               </View>
               <TextInput label={t('title')} value={track.title}
                 onChangeText={v => updateMusic(idx, 'title', v)} {...inputProps} />
-              {(track.audioLocalUri || track.audioUrl) ? (
-                <Text style={styles.uploadedNote}>
-                  {track.audioLocalUri ? `📎 ${track.audioUrl}` : `🎵 ${track.audioUrl}`}
-                </Text>
+              {track.audioLocalUri ? (
+                <Text style={styles.uploadedNote}>📎 {track.audioUrl}</Text>
               ) : null}
               <Button mode="outlined" icon="music" onPress={() => pickAudio(idx)}
                 style={styles.pickBtn} textColor={Colors.primary}>
@@ -668,9 +685,13 @@ const styles = StyleSheet.create({
   segActive: { backgroundColor: Colors.primary },
   segInactive: { backgroundColor: Colors.card },
   pickBtn: { borderColor: Colors.border, borderRadius: 4, marginBottom: 8 },
-  figureCard: { marginBottom: 12, backgroundColor: Colors.card, borderColor: Colors.border },
+  figureCard: { marginBottom: 12, backgroundColor: Colors.card, borderColor: Colors.border, overflow: 'hidden' },
+  figureAccordionHeader: { flexDirection: 'row', alignItems: 'center', paddingLeft: 16 },
+  figureAccordionTitle: { flex: 1, fontFamily: Fonts.bodySemiBold, color: Colors.foreground, fontSize: 13 },
+  figureContent: { paddingHorizontal: 12, paddingBottom: 4, borderTopWidth: 1, borderTopColor: Colors.border },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   cardTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, fontSize: 13 },
+  schemeInput: { minHeight: 80 },
   addSectionBtn: { borderColor: Colors.primary, borderRadius: 4, marginBottom: 4 },
   uploadedNote: { color: Colors.mutedForeground, fontSize: 12, marginBottom: 8 },
   musicBtns: { flexDirection: 'row', gap: 8, marginBottom: 4 },

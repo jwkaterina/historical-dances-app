@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ScrollView, StyleSheet, View, Text as RNText } from 'react-native'
-import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip } from 'react-native-paper'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip, List } from 'react-native-paper'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useDance, useDeleteDance } from '@/hooks/useDances'
@@ -15,20 +16,51 @@ import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/data
 
 export default function DanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const insets = useSafeAreaInsets()
   const { t, language } = useLanguage()
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null)
   const [snackbar, setSnackbar] = useState('')
+  const [expandedFigures, setExpandedFigures] = useState<Set<string>>(new Set())
+
+  const toggleFigure = useCallback((id: string) => {
+    setExpandedFigures(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }, [])
 
   const { data: dance, isLoading } = useDance(id)
   const deleteMutation = useDeleteDance()
 
-  if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
-  if (!dance) return <View style={styles.center}><Text style={{ color: Colors.mutedForeground }}>{t('noDancesFound')}</Text></View>
+  const name = dance ? ((language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? '') : ''
 
-  const name = (language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? ''
+  const headerOptions = {
+    title: name,
+    headerShown: true,
+    headerStyle: { backgroundColor: Colors.foreground },
+    headerTintColor: Colors.background,
+    headerShadowVisible: false,
+    headerTitle: ({ children, tintColor }: any) => (
+      <RNText style={{ fontFamily: Fonts.heading, color: tintColor ?? Colors.background, fontSize: 17 }}>{children}</RNText>
+    ),
+  }
+
+  if (isLoading) return (
+    <>
+      <Stack.Screen options={headerOptions} />
+      <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
+    </>
+  )
+  if (!dance) return (
+    <>
+      <Stack.Screen options={headerOptions} />
+      <View style={styles.center}><Text style={{ color: Colors.mutedForeground }}>{t('noDancesFound')}</Text></View>
+    </>
+  )
   const description = (language === 'de' ? dance.description_de : dance.description_ru) ?? dance.description ?? ''
   const scheme = (language === 'de' ? dance.scheme_de : dance.scheme_ru) ?? dance.scheme ?? ''
   const videos = [...(dance.dance_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
@@ -44,16 +76,7 @@ export default function DanceDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={{
-        title: name,
-        headerShown: true,
-        headerStyle: { backgroundColor: Colors.foreground },
-        headerTintColor: Colors.background,
-        headerShadowVisible: false,
-        headerTitle: ({ children, tintColor }) => (
-          <RNText style={{ fontFamily: Fonts.heading, color: tintColor ?? Colors.background, fontSize: 17 }}>{children}</RNText>
-        ),
-      }} />
+      <Stack.Screen options={headerOptions} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>{name}</Text>
 
@@ -97,13 +120,26 @@ export default function DanceDetailScreen() {
             {figures.map((figure: DanceFigure, idx: number) => {
               const figScheme = (language === 'de' ? figure.scheme_de : figure.scheme_ru) ?? ''
               const figVideos = [...(figure.figure_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
+              const expanded = expandedFigures.has(figure.id)
+              const hasContent = !!figScheme || figVideos.length > 0
               return (
                 <Card key={figure.id} style={styles.figureCard} mode="outlined">
-                  <Card.Content>
-                    <Text variant="labelMedium" style={styles.figureTitle}>{t('figure')} {idx + 1}</Text>
-                    {figScheme ? <Text variant="bodyMedium" style={styles.schemeText}>{figScheme}</Text> : null}
-                    {figVideos.map(v => <VideoPlayer key={v.id} video={v} style={styles.videoPlayer} />)}
-                  </Card.Content>
+                  <List.Accordion
+                    title={`${t('figure')} ${idx + 1}`}
+                    expanded={expanded}
+                    onPress={() => toggleFigure(figure.id)}
+                    titleStyle={styles.figureTitle}
+                    style={styles.figureAccordion}
+                    right={props => hasContent
+                      ? <List.Icon {...props} icon={expanded ? 'chevron-up' : 'chevron-down'} color={Colors.mutedForeground} />
+                      : null}
+                  >
+                    <View style={styles.figureContent}>
+                      {figScheme ? <Text variant="bodyMedium" style={styles.schemeText}>{figScheme}</Text> : null}
+                      {figVideos.map(v => <VideoPlayer key={v.id} video={v} style={styles.videoPlayer} />)}
+                      {!hasContent && <Text variant="bodySmall" style={styles.emptyText}>—</Text>}
+                    </View>
+                  </List.Accordion>
                 </Card>
               )
             })}
@@ -171,7 +207,7 @@ export default function DanceDetailScreen() {
       </ScrollView>
 
       {currentTrack?.audio_url && (
-        <View style={styles.playerContainer}>
+        <View style={[styles.playerContainer, { paddingBottom: insets.bottom }]}>
           <AudioPlayer url={currentTrack.audio_url} title={currentTrack.title}
             artist={currentTrack.artist ?? undefined} onClose={() => setCurrentTrack(null)} />
         </View>
@@ -199,8 +235,10 @@ const styles = StyleSheet.create({
   bodyText: { color: Colors.foreground, lineHeight: 22 },
   schemeText: { color: Colors.foreground, backgroundColor: Colors.muted, padding: 12, borderRadius: 6, lineHeight: 22, fontFamily: 'monospace' },
   videoPlayer: { marginBottom: 8 },
-  figureCard: { marginBottom: 10, backgroundColor: Colors.card, borderColor: Colors.border },
-  figureTitle: { color: Colors.mutedForeground, marginBottom: 4 },
+  figureCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border, overflow: 'hidden' },
+  figureAccordion: { backgroundColor: Colors.card, paddingVertical: 0 },
+  figureTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, fontSize: 14 },
+  figureContent: { paddingHorizontal: 16, paddingBottom: 12 },
   musicCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border },
   musicCardContent: { flexDirection: 'row', alignItems: 'center' },
   musicTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },

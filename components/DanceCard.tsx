@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
   left: { flex: 1 },
   name: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
   origin: { color: Colors.mutedForeground, marginTop: 2 },
-  chip: { height: 32, borderRadius: 6, backgroundColor: Colors.secondary },
-  chipText: { color: Colors.secondaryForeground, fontSize: 12, fontFamily: Fonts.bodySemiBold },
+  chip: { borderRadius: 4, backgroundColor: Colors.muted },
+  chipText: { color: Colors.mutedForeground, fontSize: 11, fontFamily: Fonts.body },
 })
