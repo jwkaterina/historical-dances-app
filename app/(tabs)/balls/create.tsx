@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native'
-import { Text, TextInput, Button, Divider, Card, IconButton, Snackbar, ActivityIndicator } from 'react-native-paper'
+import { useState, useEffect, useRef } from 'react'
+import { StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import { Text, TextInput, Button, Divider, Card, IconButton, Snackbar, ActivityIndicator, Chip } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCreateBall, useUpdateBall, useBall, useDancesForBall } from '@/hooks/useBalls'
@@ -9,11 +9,24 @@ import { Fonts } from '@/lib/fonts'
 import type { SectionFormData } from '@/types/database'
 import DancePickerModal from '@/components/DancePickerModal'
 
+type FormEntry =
+  | { kind: 'dance'; order_index: number; danceId: string; musicIds?: string[]; _key: string }
+  | { kind: 'text'; order_index: number; content_de: string; content_ru: string; _key: string }
+
+type FormSection = {
+  id?: string
+  name_de: string
+  name_ru: string
+  entries: FormEntry[]
+}
+
 export default function BallFormScreen() {
   const { edit } = useLocalSearchParams<{ edit?: string }>()
   const { t, language } = useLanguage()
   const router = useRouter()
   const isEdit = !!edit
+  const keyRef = useRef(0)
+  const genKey = () => `k${++keyRef.current}`
 
   const { data: existing, isLoading: loadingExisting } = useBall(edit ?? '')
   const { data: dances = [] } = useDancesForBall()
@@ -25,7 +38,7 @@ export default function BallFormScreen() {
   const [date, setDate] = useState('')
   const [placeDe, setPlaceDe] = useState('')
   const [placeRu, setPlaceRu] = useState('')
-  const [sections, setSections] = useState<SectionFormData[]>([])
+  const [sections, setSections] = useState<FormSection[]>([])
   const [error, setError] = useState('')
   const [showDancePicker, setShowDancePicker] = useState<{ sectionIdx: number } | null>(null)
 
@@ -36,7 +49,7 @@ export default function BallFormScreen() {
       setDate(existing.date ?? '')
       setPlaceDe(existing.place_de ?? '')
       setPlaceRu(existing.place_ru ?? '')
-      const sects: SectionFormData[] = (existing.ball_sections ?? [])
+      const sects: FormSection[] = (existing.ball_sections ?? [])
         .sort((a, b) => a.order_index - b.order_index)
         .map(s => ({
           id: s.id,
@@ -48,12 +61,14 @@ export default function BallFormScreen() {
               order_index: sd.order_index,
               danceId: sd.dance_id,
               musicIds: sd.music_ids ?? [],
+              _key: sd.id ?? genKey(),
             })),
             ...(s.section_texts ?? []).map(st => ({
               kind: 'text' as const,
               order_index: st.order_index,
               content_de: st.content_de,
               content_ru: st.content_ru,
+              _key: st.id ?? genKey(),
             })),
           ].sort((a, b) => a.order_index - b.order_index),
         }))
@@ -62,22 +77,18 @@ export default function BallFormScreen() {
   }, [existing])
 
   const addSection = () => setSections(prev => [...prev, { name_de: '', name_ru: '', entries: [] }])
-
-  const updateSection = (idx: number, field: 'name_de' | 'name_ru', val: string) =>
-    setSections(prev => prev.map((s, i) => i === idx ? { ...s, [field]: val } : s))
-
   const removeSection = (idx: number) => setSections(prev => prev.filter((_, i) => i !== idx))
 
   const addTextEntry = (sectionIdx: number) =>
     setSections(prev => prev.map((s, i) => {
       if (i !== sectionIdx) return s
-      return { ...s, entries: [...s.entries, { kind: 'text', order_index: s.entries.length, content_de: '', content_ru: '' }] }
+      return { ...s, entries: [...s.entries, { kind: 'text', order_index: s.entries.length, content_de: '', content_ru: '', _key: genKey() }] }
     }))
 
   const addDanceEntry = (sectionIdx: number, danceId: string) =>
     setSections(prev => prev.map((s, i) => {
       if (i !== sectionIdx) return s
-      return { ...s, entries: [...s.entries, { kind: 'dance', order_index: s.entries.length, danceId }] }
+      return { ...s, entries: [...s.entries, { kind: 'dance', order_index: s.entries.length, danceId, musicIds: [], _key: genKey() }] }
     }))
 
   const removeEntry = (sectionIdx: number, entryIdx: number) =>
@@ -92,12 +103,36 @@ export default function BallFormScreen() {
       return { ...s, entries: s.entries.map((e, ei) => ei === entryIdx && e.kind === 'text' ? { ...e, [field]: val } : e) }
     }))
 
+  const toggleMusicId = (sectionIdx: number, entryIdx: number, trackId: string) =>
+    setSections(prev => prev.map((s, i) => {
+      if (i !== sectionIdx) return s
+      return {
+        ...s,
+        entries: s.entries.map((e, ei) => {
+          if (ei !== entryIdx || e.kind !== 'dance') return e
+          const current = (e as any).musicIds ?? []
+          const next = current.includes(trackId)
+            ? current.filter((id: string) => id !== trackId)
+            : [...current, trackId]
+          return { ...e, musicIds: next }
+        }),
+      }
+    }))
+
+  const getDanceName = (danceId: string) => {
+    const d = (dances as any[]).find(d => d.id === danceId)
+    return d ? (language === 'de' ? d.name_de : d.name_ru) ?? d.name : danceId
+  }
+
   const handleSubmit = async () => {
     if (!nameDe || !nameRu || !date || !placeDe || !placeRu) { setError(t('fillAllFields')); return }
     try {
-      const formData = { name_de: nameDe, name_ru: nameRu, date, place_de: placeDe, place_ru: placeRu, sections }
-      if (isEdit && edit) await updateBall.mutateAsync({ id: edit, data: formData })
-      else await createBall.mutateAsync(formData)
+      const formData: SectionFormData[] = sections.map(s => ({
+        ...s,
+        entries: s.entries.map(({ _key, ...rest }) => rest) as SectionFormData['entries'],
+      }))
+      if (isEdit && edit) await updateBall.mutateAsync({ id: edit, data: { name_de: nameDe, name_ru: nameRu, date, place_de: placeDe, place_ru: placeRu, sections: formData } })
+      else await createBall.mutateAsync({ name_de: nameDe, name_ru: nameRu, date, place_de: placeDe, place_ru: placeRu, sections: formData })
       router.back()
     } catch (e: any) { setError(e.message ?? t('error')) }
   }
@@ -139,40 +174,62 @@ export default function BallFormScreen() {
                 <Text variant="labelLarge" style={styles.sectionNum}>{t('section')} {sIdx + 1}</Text>
                 <IconButton icon="delete" iconColor={Colors.destructive} size={18} onPress={() => removeSection(sIdx)} />
               </View>
-              <TextInput label={`${t('sectionName')} (DE)`} value={section.name_de}
-                onChangeText={v => updateSection(sIdx, 'name_de', v)} {...inputProps} />
-              <TextInput label={`${t('sectionName')} (RU)`} value={section.name_ru}
-                onChangeText={v => updateSection(sIdx, 'name_ru', v)} {...inputProps} />
 
               {section.entries.length > 0 && (
                 <View style={styles.entriesList}>
-                  {section.entries.map((entry, eIdx) => (
-                    <View key={eIdx} style={entry.kind === 'dance' ? styles.danceEntry : styles.textEntry}>
-                      {entry.kind === 'dance' ? (
-                        <>
-                          <Text variant="bodyMedium" style={styles.danceEntryText} numberOfLines={1}>
-                            {(() => {
-                              const d = (dances as any[]).find(d => d.id === (entry as any).danceId)
-                              return d ? (language === 'de' ? d.name_de : d.name_ru) ?? d.name : (entry as any).danceId
-                            })()}
-                          </Text>
-                          <IconButton icon="close" iconColor={Colors.mutedForeground} size={16} onPress={() => removeEntry(sIdx, eIdx)} />
-                        </>
-                      ) : (
-                        <View style={{ flex: 1 }}>
-                          <TextInput label="Text (DE)" value={(entry as any).content_de}
+                  {section.entries.map((entry, eIdx) => {
+                    if (entry.kind === 'dance') {
+                      const d = (dances as any[]).find(d => d.id === entry.danceId)
+                      const danceName = getDanceName(entry.danceId)
+                      const tracks = (d as any)?.musicTracks ?? []
+                      const selectedIds = entry.musicIds ?? []
+                      return (
+                        <View key={entry._key} style={styles.danceEntry}>
+                          <View style={styles.danceEntryRow}>
+                            <Text variant="bodyMedium" style={styles.danceEntryText} numberOfLines={1}>{danceName}</Text>
+                            <IconButton icon="close" iconColor={Colors.mutedForeground} size={16}
+                              onPress={() => removeEntry(sIdx, eIdx)} style={styles.entryCloseBtn} />
+                          </View>
+                          {tracks.length > 0 && (
+                            <View style={styles.musicChips}>
+                              {tracks.map((track: any) => {
+                                const active = selectedIds.includes(track.id)
+                                return (
+                                  <Chip key={track.id} compact selected={active}
+                                    onPress={() => toggleMusicId(sIdx, eIdx, track.id)}
+                                    icon={active ? 'check' : 'music-note'}
+                                    style={[styles.musicChip, active && styles.musicChipSelected]}
+                                    textStyle={{ fontSize: 11, color: active ? Colors.primaryForeground : Colors.mutedForeground }}>
+                                    {track.title}
+                                  </Chip>
+                                )
+                              })}
+                            </View>
+                          )}
+                        </View>
+                      )
+                    } else {
+                      return (
+                        <View key={entry._key} style={styles.textEntry}>
+                          <View style={styles.textEntryHeader}>
+                            <View style={{ flex: 1 }} />
+                            <IconButton icon="close" iconColor={Colors.mutedForeground} size={16}
+                              onPress={() => removeEntry(sIdx, eIdx)} style={styles.entryCloseBtn} />
+                          </View>
+                          <TextInput label="Text (DE)" value={entry.content_de}
                             onChangeText={v => updateTextEntry(sIdx, eIdx, 'content_de', v)}
                             mode="outlined" outlineColor={Colors.border} activeOutlineColor={Colors.primary}
-                            textColor={Colors.foreground} multiline style={[styles.input, { backgroundColor: Colors.background }]} />
-                          <TextInput label="Text (RU)" value={(entry as any).content_ru}
+                            textColor={Colors.foreground} multiline
+                            style={[styles.input, { backgroundColor: Colors.background }]} />
+                          <TextInput label="Text (RU)" value={entry.content_ru}
                             onChangeText={v => updateTextEntry(sIdx, eIdx, 'content_ru', v)}
                             mode="outlined" outlineColor={Colors.border} activeOutlineColor={Colors.primary}
-                            textColor={Colors.foreground} multiline style={[styles.input, { backgroundColor: Colors.background }]} />
-                          <IconButton icon="close" iconColor={Colors.mutedForeground} size={16} onPress={() => removeEntry(sIdx, eIdx)} style={{ alignSelf: 'flex-end' }} />
+                            textColor={Colors.foreground} multiline
+                            style={[styles.input, { backgroundColor: Colors.background }]} />
                         </View>
-                      )}
-                    </View>
-                  ))}
+                      )
+                    }
+                  })}
                 </View>
               )}
 
@@ -226,9 +283,15 @@ const styles = StyleSheet.create({
   sectionCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   sectionNum: { color: Colors.primary, fontFamily: Fonts.bodySemiBold },
   entriesList: { marginBottom: 8, gap: 6 },
-  danceEntry: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.muted, borderRadius: 6, paddingLeft: 12, paddingVertical: 4 },
+  danceEntry: { backgroundColor: Colors.muted, borderRadius: 6, paddingVertical: 4, paddingRight: 4 },
+  danceEntryRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: 12 },
   danceEntryText: { flex: 1, color: Colors.foreground },
-  textEntry: { backgroundColor: Colors.muted, borderRadius: 6, padding: 8 },
+  textEntry: { backgroundColor: Colors.muted, borderRadius: 6, padding: 8, paddingBottom: 0 },
+  textEntryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 0 },
+  entryCloseBtn: { margin: 0 },
+  musicChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 },
+  musicChip: { borderRadius: 4, backgroundColor: Colors.border },
+  musicChipSelected: { backgroundColor: Colors.primary },
   addEntryRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   addBtn: { flex: 1, borderColor: Colors.border, borderRadius: 4 },
   addSectionBtn: { marginBottom: 16, borderColor: Colors.border, borderRadius: 4 },

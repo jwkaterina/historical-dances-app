@@ -1,5 +1,7 @@
+import 'react-native-gesture-handler'
 import { useEffect } from 'react'
 import { useColorScheme, View } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PaperProvider } from 'react-native-paper'
@@ -71,6 +73,7 @@ export default function RootLayout() {
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
         <PaperProvider theme={theme}>
@@ -79,15 +82,16 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="dance/[id]" options={{ headerShown: false }} />
-                <Stack.Screen name="dance/create" options={{ headerShown: false }} />
-                <Stack.Screen name="dance/edit/[id]" options={{ headerShown: false }} />
-                <Stack.Screen name="webview" options={{ headerShown: false }} />
+                <Stack.Screen name="dance" />
+                <Stack.Screen name="webview" />
+                <Stack.Screen name="ball-info" />
+                <Stack.Screen name="pdf-viewer" />
               </Stack>
             </AuthGuard>
           </SafeAreaProvider>
         </PaperProvider>
       </LanguageProvider>
     </QueryClientProvider>
+    </GestureHandlerRootView>
   )
 }

@@ -121,6 +121,7 @@ export const translations = {
     addFigure: "Figur hinzufügen",
     loading: "Lädt...",
     done: "Fertig",
+    editOrder: "Reihenfolge bearbeiten",
 
     section: "Abteilung",
     sections: "Abteilungen",
@@ -378,6 +379,7 @@ export const translations = {
     addFigure: "Добавить фигуру",
     loading: "Загрузка...",
     done: "Готово",
+    editOrder: "Изменить порядок",
 
     section: "Отделение",
     sections: "Отделения",

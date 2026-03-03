@@ -43,6 +43,8 @@ export interface BallFormData {
   date: string
   place_de: string
   place_ru: string
+  info_de?: string
+  info_ru?: string
   sections: SectionFormData[]
 }
 
@@ -60,6 +62,8 @@ export async function createBall(formData: BallFormData): Promise<Ball> {
       place: formData.place_de,
       place_de: formData.place_de,
       place_ru: formData.place_ru,
+      info_de: formData.info_de ?? null,
+      info_ru: formData.info_ru ?? null,
       user_id: user.id,
     })
     .select()
@@ -85,6 +89,8 @@ export async function updateBall(id: string, formData: BallFormData): Promise<vo
       place: formData.place_de,
       place_de: formData.place_de,
       place_ru: formData.place_ru,
+      info_de: formData.info_de ?? null,
+      info_ru: formData.info_ru ?? null,
     })
     .eq('id', id)
 
