@@ -9,19 +9,33 @@ import AudioPlayer from '@/components/AudioPlayer'
 import type { MusicTrack } from '@/types/database'
 
 export default function MusicScreen() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [search, setSearch] = useState('')
   const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null)
 
-  const { data: tracks = [], isLoading, refetch, isRefetching } = useMusic(search)
+  const { data: allTracks = [], isLoading, refetch, isRefetching } = useMusic()
+
+  const tracks = allTracks.filter(track => {
+    if (!search.trim()) return true
+    const term = search.toLowerCase()
+    if (track.title.toLowerCase().includes(term)) return true
+    if (track.artist?.toLowerCase().includes(term)) return true
+    return (track.dance_music ?? []).some(dm => {
+      const d = dm.dances
+      if (!d) return false
+      return (d.name_de ?? '').toLowerCase().includes(term) ||
+             (d.name_ru ?? '').toLowerCase().includes(term)
+    })
+  })
 
   const renderItem = useCallback(({ item }: { item: MusicTrack }) => (
     <MusicCard
       track={item}
       isPlaying={currentTrack?.id === item.id}
+      language={language}
       onPress={() => setCurrentTrack(prev => prev?.id === item.id ? null : item)}
     />
-  ), [currentTrack])
+  ), [currentTrack, language])
 
   return (
     <View style={styles.container}>

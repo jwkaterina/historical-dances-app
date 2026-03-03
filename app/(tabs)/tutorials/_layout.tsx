@@ -22,6 +22,9 @@ export default function TutorialsLayout() {
     >
       <Stack.Screen name="index" options={{ title: t('tutorials') }} />
       <Stack.Screen name="[id]" options={{ title: t('tutorials') }} />
+      <Stack.Screen name="create" options={{ title: t('createTutorial') }} />
+      <Stack.Screen name="edit/[id]" options={{ title: t('editTutorial') }} />
+      <Stack.Screen name="categories" options={{ title: t('categories') }} />
     </Stack>
   )
 }

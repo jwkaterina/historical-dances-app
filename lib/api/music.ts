@@ -1,18 +1,12 @@
 import { supabase } from '@/lib/supabase'
 import type { MusicTrack } from '@/types/database'
 
-export async function fetchMusic(search?: string): Promise<MusicTrack[]> {
-  let query = supabase
+export async function fetchMusic(): Promise<MusicTrack[]> {
+  const { data, error } = await supabase
     .from('music')
-    .select('id, title, artist, tempo, genre, audio_url, created_at')
+    .select('id, title, artist, tempo, genre, audio_url, created_at, dance_music ( dances:dance_id ( id, name_de, name_ru ) )')
     .order('title', { ascending: true })
 
-  if (search && search.trim()) {
-    const term = `%${search.trim()}%`
-    query = query.or(`title.ilike.${term},artist.ilike.${term}`)
-  }
-
-  const { data, error } = await query
   if (error) throw error
   return (data ?? []) as MusicTrack[]
 }

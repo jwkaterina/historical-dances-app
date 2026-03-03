@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react'
 import { FlatList, StyleSheet, View, RefreshControl } from 'react-native'
-import { Text, Searchbar, Chip, ActivityIndicator } from 'react-native-paper'
+import { Text, Searchbar, Chip, ActivityIndicator, FAB, Button } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTutorials, useTutorialCategories } from '@/hooks/useTutorials'
+import { useAuth } from '@/hooks/useAuth'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import type { Tutorial } from '@/types/database'
@@ -16,6 +17,7 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function TutorialsScreen() {
   const { t, language } = useLanguage()
+  const { isAuthenticated } = useAuth()
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
@@ -112,6 +114,15 @@ export default function TutorialsScreen() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />}
         />
       )}
+      {isAuthenticated && (
+        <>
+          <FAB icon="plus" style={styles.fab} onPress={() => router.push('/(tabs)/tutorials/create')} color={Colors.primaryForeground} />
+          <Button icon="tag-multiple" mode="text" textColor={Colors.primary} style={styles.catBtn}
+            onPress={() => router.push('/(tabs)/tutorials/categories')}>
+            {t('manageCategories')}
+          </Button>
+        </>
+      )}
     </View>
   )
 }
@@ -125,6 +136,8 @@ const styles = StyleSheet.create({
   list: { padding: 12, paddingTop: 4 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { color: Colors.mutedForeground, textAlign: 'center' },
+  fab: { position: 'absolute', right: 16, bottom: 16, backgroundColor: Colors.primary },
+  catBtn: { position: 'absolute', left: 8, bottom: 10 },
   item: {
     flexDirection: 'row',
     alignItems: 'center',

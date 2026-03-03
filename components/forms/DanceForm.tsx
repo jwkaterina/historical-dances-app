@@ -549,17 +549,15 @@ export default function DanceForm({ danceId }: Props) {
             </Card.Content>
           </Card>
         ))}
-        <View style={styles.musicBtns}>
-          <Button mode="outlined" icon="music" onPress={() => setShowMusicPicker(true)}
-            style={[styles.addSectionBtn, { flex: 1 }]} textColor={Colors.primary}>
-            {t('chooseMusicTrack')}
-          </Button>
-          <Button mode="outlined" icon="plus"
-            onPress={() => setMusic(prev => [...prev, { title: '', artist: '', tempo: '', audioUrl: '' }])}
-            style={[styles.addSectionBtn, { flex: 1 }]} textColor={Colors.primary}>
-            {t('addMusicTrack')}
-          </Button>
-        </View>
+        <Button mode="outlined" icon="music" onPress={() => setShowMusicPicker(true)}
+          style={styles.addSectionBtn} textColor={Colors.primary}>
+          {t('chooseMusicTrack')}
+        </Button>
+        <Button mode="outlined" icon="plus"
+          onPress={() => setMusic(prev => [...prev, { title: '', artist: '', tempo: '', audioUrl: '' }])}
+          style={styles.addSectionBtn} textColor={Colors.primary}>
+          {t('addMusicTrack')}
+        </Button>
 
         <Button mode="contained" onPress={handleSubmit} loading={isSaving} disabled={isSaving}
           style={styles.submitBtn} buttonColor={Colors.primary} textColor={Colors.primaryForeground}>
@@ -694,7 +692,7 @@ const styles = StyleSheet.create({
   schemeInput: { minHeight: 80 },
   addSectionBtn: { borderColor: Colors.primary, borderRadius: 4, marginBottom: 4 },
   uploadedNote: { color: Colors.mutedForeground, fontSize: 12, marginBottom: 8 },
-  musicBtns: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+
   submitBtn: { marginTop: 24, borderRadius: 6 },
   // Pickers
   pickerContainer: { flex: 1, backgroundColor: Colors.background },

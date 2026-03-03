@@ -47,6 +47,7 @@ export interface MusicTrack {
   genre: string | null
   audio_url: string | null
   created_at: string
+  dance_music?: { dances: Pick<Dance, 'id' | 'name_de' | 'name_ru'> | null }[]
 }
 
 export interface DanceWithDetails extends Dance {

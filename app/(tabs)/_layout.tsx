@@ -1,5 +1,6 @@
 import { Text } from 'react-native'
 import { Tabs } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
@@ -7,6 +8,7 @@ import { Fonts } from '@/lib/fonts'
 
 export default function TabsLayout() {
   const { t } = useLanguage()
+  const insets = useSafeAreaInsets()
 
   return (
     <Tabs
@@ -21,8 +23,8 @@ export default function TabsLayout() {
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.25,
           shadowRadius: 10,
-          height: 62,
-          paddingBottom: 8,
+          height: 62 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
           paddingTop: 6,
         },
         tabBarLabelStyle: { fontFamily: Fonts.body, fontSize: 11 },

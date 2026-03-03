@@ -31,7 +31,11 @@ export default function VideoPlayer({ video, style }: Props) {
           height={playerHeight}
           width={playerWidth}
           videoId={videoId}
-          webViewProps={{ scrollEnabled: false }}
+          webViewProps={{
+            scrollEnabled: false,
+            allowsInlineMediaPlayback: true,
+            mediaPlaybackRequiresUserAction: false,
+          }}
         />
       </View>
     )
@@ -53,9 +57,9 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
       <Video
         source={{ uri: url }}
         style={{ width, height, borderRadius: 8 }}
-        useNativeControls
         resizeMode={ResizeMode.CONTAIN}
         shouldPlay={playing}
+        isLooping={false}
         onPlaybackStatusUpdate={status => {
           if (!status.isLoaded) return
           if (status.didJustFinish) setPlaying(false)

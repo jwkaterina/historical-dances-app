@@ -252,5 +252,5 @@ const styles = StyleSheet.create({
   typeBadgeText: { color: Colors.secondaryForeground, fontSize: 11, fontFamily: Fonts.body },
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   actionBtn: { flex: 1, borderColor: Colors.border },
-  playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, elevation: 8 },
+  playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, elevation: 8, backgroundColor: Colors.card },
 })

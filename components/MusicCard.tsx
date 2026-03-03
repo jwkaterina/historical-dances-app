@@ -7,10 +7,19 @@ import type { MusicTrack } from '@/types/database'
 interface Props {
   track: MusicTrack
   isPlaying: boolean
+  language: string
   onPress: () => void
 }
 
-export default function MusicCard({ track, isPlaying, onPress }: Props) {
+export default function MusicCard({ track, isPlaying, language, onPress }: Props) {
+  const dances = (track.dance_music ?? [])
+    .map(dm => dm.dances)
+    .filter(Boolean)
+  const danceNames = dances
+    .map(d => (language === 'de' ? d!.name_de : d!.name_ru) ?? '')
+    .filter(Boolean)
+    .join(', ')
+
   return (
     <Card
       style={[styles.card, isPlaying && styles.playing]}
@@ -19,8 +28,14 @@ export default function MusicCard({ track, isPlaying, onPress }: Props) {
     >
       <Card.Content style={styles.content}>
         <View style={styles.info}>
-          <Text variant="titleSmall" style={styles.title}>{track.title}</Text>
-          {track.artist && <Text variant="bodySmall" style={styles.artist}>{track.artist}</Text>}
+          {danceNames ? (
+            <>
+              <Text variant="titleSmall" style={styles.title}>{danceNames}</Text>
+              <Text variant="bodySmall" style={styles.trackName}>{track.title}</Text>
+            </>
+          ) : (
+            <Text variant="titleSmall" style={styles.title}>{track.title}</Text>
+          )}
           <View style={styles.meta}>
             {track.tempo && <Text variant="bodySmall" style={styles.metaText}>{track.tempo} BPM</Text>}
             {track.genre && <Text variant="bodySmall" style={styles.metaText}>{track.genre}</Text>}
@@ -43,7 +58,7 @@ const styles = StyleSheet.create({
   content: { flexDirection: 'row', alignItems: 'center', paddingRight: 0 },
   info: { flex: 1 },
   title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
-  artist: { color: Colors.mutedForeground },
+  trackName: { color: Colors.mutedForeground, marginTop: 1 },
   meta: { flexDirection: 'row', gap: 8, marginTop: 2 },
   metaText: { color: Colors.mutedForeground },
 })
