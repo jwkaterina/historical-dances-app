@@ -119,8 +119,8 @@ export default function RootLayout() {
           <SafeAreaProvider>
             <AuthGuard>
               <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="(auth)" />
                 <Stack.Screen name="webview" />
                 <Stack.Screen name="pdf-viewer" />
               </Stack>
