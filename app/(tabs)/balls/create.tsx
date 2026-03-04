@@ -8,6 +8,7 @@ import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import type { SectionFormData } from '@/types/database'
 import DancePickerModal from '@/components/DancePickerModal'
+import DragSortList, { type SortItem } from '@/components/DragSortList'
 
 type FormEntry =
   | { kind: 'dance'; order_index: number; danceId: string; musicIds?: string[]; _key: string }
@@ -39,8 +40,12 @@ export default function BallFormScreen() {
   const [placeDe, setPlaceDe] = useState('')
   const [placeRu, setPlaceRu] = useState('')
   const [sections, setSections] = useState<FormSection[]>([])
+  const [globalEditOrder, setGlobalEditOrder] = useState(false)
   const [error, setError] = useState('')
   const [showDancePicker, setShowDancePicker] = useState<{ sectionIdx: number } | null>(null)
+
+  const scrollRef = useRef<ScrollView>(null)
+  const scrollOffsetRef = useRef(0)
 
   useEffect(() => {
     if (existing) {
@@ -124,6 +129,52 @@ export default function BallFormScreen() {
     return d ? (language === 'de' ? d.name_de : d.name_ru) ?? d.name : danceId
   }
 
+  // Build a flat list of section separators + dance-only items for the reorder UI.
+  // Text entries are excluded — they stay in their sections when dances are reordered.
+  const buildFlatItems = (): SortItem[] => {
+    const result: SortItem[] = []
+    sections.forEach((section, sIdx) => {
+      result.push({ key: `__sep__${sIdx}`, label: `${t('section')} ${sIdx + 1}`, separator: true })
+      section.entries
+        .filter(e => e.kind === 'dance')
+        .forEach(entry => {
+          result.push({ key: entry._key, label: getDanceName((entry as Extract<FormEntry, { kind: 'dance' }>).danceId) })
+        })
+    })
+    return result
+  }
+
+  // Reconstruct sections from a reordered flat list.
+  // Text entries are appended after the reordered dances in each section.
+  const handleGlobalReorder = (sorted: SortItem[]) => {
+    const newSections: FormSection[] = []
+    let current: FormSection | null = null
+    let currentOrigSIdx = -1
+    for (const item of sorted) {
+      if (item.separator) {
+        if (current !== null) {
+          const origTexts = sections[currentOrigSIdx]?.entries.filter(e => e.kind === 'text') ?? []
+          current.entries.push(...origTexts)
+          newSections.push(current)
+        }
+        const sIdx = parseInt(item.key.replace('__sep__', ''), 10)
+        currentOrigSIdx = sIdx
+        const orig = sections[sIdx]
+        current = { id: orig?.id, name_de: orig?.name_de ?? '', name_ru: orig?.name_ru ?? '', entries: [] }
+      } else {
+        const allEntries = sections.flatMap(s => s.entries)
+        const entry = allEntries.find(e => e._key === item.key)
+        if (entry && current) current.entries.push(entry)
+      }
+    }
+    if (current !== null) {
+      const origTexts = sections[currentOrigSIdx]?.entries.filter(e => e.kind === 'text') ?? []
+      current.entries.push(...origTexts)
+      newSections.push(current)
+    }
+    setSections(newSections.map(s => ({ ...s, entries: s.entries.map((e, i) => ({ ...e, order_index: i })) })))
+  }
+
   const handleSubmit = async () => {
     if (!nameDe || !nameRu || !date || !placeDe || !placeRu) { setError(t('fillAllFields')); return }
     try {
@@ -140,6 +191,7 @@ export default function BallFormScreen() {
   if (isEdit && loadingExisting) return <ActivityIndicator style={{ flex: 1 }} size="large" color={Colors.primary} />
 
   const isSaving = createBall.isPending || updateBall.isPending
+  const totalDances = sections.reduce((n, s) => n + s.entries.filter(e => e.kind === 'dance').length, 0)
 
   const inputProps = {
     mode: 'outlined' as const,
@@ -151,7 +203,13 @@ export default function BallFormScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        scrollEventThrottle={16}
+        onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y }}
+      >
 
         <Text style={styles.fieldLabel}>{t('ballName')}</Text>
         <TextInput label="DE" value={nameDe} onChangeText={setNameDe} {...inputProps} />
@@ -165,93 +223,118 @@ export default function BallFormScreen() {
         <TextInput label="RU" value={placeRu} onChangeText={setPlaceRu} {...inputProps} />
 
         <Divider style={styles.divider} />
-        <Text style={styles.fieldLabel}>{t('sections')}</Text>
+        <View style={styles.sectionsHeader}>
+          <Text style={styles.fieldLabel}>{t('sections')}</Text>
+          {totalDances >= 2 && (
+            globalEditOrder
+              ? <Button compact mode="contained" buttonColor={Colors.primary}
+                  textColor={Colors.primaryForeground} style={styles.editOrderBtn}
+                  onPress={() => setGlobalEditOrder(false)}>{t('done')}</Button>
+              : <Button compact mode="text" textColor={Colors.primary}
+                  onPress={() => setGlobalEditOrder(true)}>{t('editOrder')}</Button>
+          )}
+        </View>
 
-        {sections.map((section, sIdx) => (
-          <Card key={sIdx} style={styles.sectionCard} mode="outlined">
+        {globalEditOrder ? (
+          <Card style={styles.sectionCard} mode="outlined">
             <Card.Content>
-              <View style={styles.sectionCardHeader}>
-                <Text variant="labelLarge" style={styles.sectionNum}>{t('section')} {sIdx + 1}</Text>
-                <IconButton icon="delete" iconColor={Colors.destructive} size={18} onPress={() => removeSection(sIdx)} />
-              </View>
-
-              {section.entries.length > 0 && (
-                <View style={styles.entriesList}>
-                  {section.entries.map((entry, eIdx) => {
-                    if (entry.kind === 'dance') {
-                      const d = (dances as any[]).find(d => d.id === entry.danceId)
-                      const danceName = getDanceName(entry.danceId)
-                      const tracks = (d as any)?.musicTracks ?? []
-                      const selectedIds = entry.musicIds ?? []
-                      return (
-                        <View key={entry._key} style={styles.danceEntry}>
-                          <View style={styles.danceEntryRow}>
-                            <Text variant="bodyMedium" style={styles.danceEntryText} numberOfLines={1}>{danceName}</Text>
-                            <IconButton icon="close" iconColor={Colors.mutedForeground} size={16}
-                              onPress={() => removeEntry(sIdx, eIdx)} style={styles.entryCloseBtn} />
-                          </View>
-                          {tracks.length > 0 && (
-                            <View style={styles.musicChips}>
-                              {tracks.map((track: any) => {
-                                const active = selectedIds.includes(track.id)
-                                return (
-                                  <Chip key={track.id} compact selected={active}
-                                    onPress={() => toggleMusicId(sIdx, eIdx, track.id)}
-                                    icon={active ? 'check' : 'music-note'}
-                                    style={[styles.musicChip, active && styles.musicChipSelected]}
-                                    textStyle={{ fontSize: 11, color: active ? Colors.primaryForeground : Colors.mutedForeground }}>
-                                    {track.title}
-                                  </Chip>
-                                )
-                              })}
-                            </View>
-                          )}
-                        </View>
-                      )
-                    } else {
-                      return (
-                        <View key={entry._key} style={styles.textEntry}>
-                          <View style={styles.textEntryHeader}>
-                            <View style={{ flex: 1 }} />
-                            <IconButton icon="close" iconColor={Colors.mutedForeground} size={16}
-                              onPress={() => removeEntry(sIdx, eIdx)} style={styles.entryCloseBtn} />
-                          </View>
-                          <TextInput label="Text (DE)" value={entry.content_de}
-                            onChangeText={v => updateTextEntry(sIdx, eIdx, 'content_de', v)}
-                            mode="outlined" outlineColor={Colors.border} activeOutlineColor={Colors.primary}
-                            textColor={Colors.foreground} multiline
-                            style={[styles.input, { backgroundColor: Colors.background }]} />
-                          <TextInput label="Text (RU)" value={entry.content_ru}
-                            onChangeText={v => updateTextEntry(sIdx, eIdx, 'content_ru', v)}
-                            mode="outlined" outlineColor={Colors.border} activeOutlineColor={Colors.primary}
-                            textColor={Colors.foreground} multiline
-                            style={[styles.input, { backgroundColor: Colors.background }]} />
-                        </View>
-                      )
-                    }
-                  })}
-                </View>
-              )}
-
-              <View style={styles.addEntryRow}>
-                <Button icon="dance-ballroom" mode="outlined" compact
-                  onPress={() => setShowDancePicker({ sectionIdx: sIdx })}
-                  style={styles.addBtn} textColor={Colors.primary}>
-                  {t('addAnotherDance')}
-                </Button>
-                <Button icon="text" mode="outlined" compact
-                  onPress={() => addTextEntry(sIdx)}
-                  style={styles.addBtn} textColor={Colors.mutedForeground}>
-                  {t('addText')}
-                </Button>
-              </View>
+              <DragSortList
+                items={buildFlatItems()}
+                onReorder={handleGlobalReorder}
+                scrollRef={scrollRef}
+                scrollOffsetRef={scrollOffsetRef}
+              />
             </Card.Content>
           </Card>
-        ))}
+        ) : (
+          <>
+            {sections.map((section, sIdx) => (
+              <Card key={sIdx} style={styles.sectionCard} mode="outlined">
+                <Card.Content>
+                  <View style={styles.sectionCardHeader}>
+                    <Text variant="labelLarge" style={styles.sectionNum}>{t('section')} {sIdx + 1}</Text>
+                    <IconButton icon="delete" iconColor={Colors.destructive} size={18} onPress={() => removeSection(sIdx)} />
+                  </View>
 
-        <Button icon="plus" mode="outlined" onPress={addSection} style={styles.addSectionBtn} textColor={Colors.primary}>
-          {t('addSection')}
-        </Button>
+                  {section.entries.length > 0 && (
+                    <View style={styles.entriesList}>
+                      {section.entries.map((entry, eIdx) => {
+                        if (entry.kind === 'dance') {
+                          const d = (dances as any[]).find(d => d.id === entry.danceId)
+                          const danceName = getDanceName(entry.danceId)
+                          const tracks = (d as any)?.musicTracks ?? []
+                          const selectedIds = entry.musicIds ?? []
+                          return (
+                            <View key={entry._key} style={styles.danceEntry}>
+                              <View style={styles.danceEntryRow}>
+                                <Text variant="bodyMedium" style={styles.danceEntryText} numberOfLines={1}>{danceName}</Text>
+                                <IconButton icon="close" iconColor={Colors.mutedForeground} size={16}
+                                  onPress={() => removeEntry(sIdx, eIdx)} style={styles.entryCloseBtn} />
+                              </View>
+                              {tracks.length > 0 && (
+                                <View style={styles.musicChips}>
+                                  {tracks.map((track: any) => {
+                                    const active = selectedIds.includes(track.id)
+                                    return (
+                                      <Chip key={track.id} compact selected={active}
+                                        onPress={() => toggleMusicId(sIdx, eIdx, track.id)}
+                                        icon={active ? 'check' : 'music-note'}
+                                        style={[styles.musicChip, active && styles.musicChipSelected]}
+                                        textStyle={{ fontSize: 11, color: active ? Colors.primaryForeground : Colors.mutedForeground }}>
+                                        {track.title}
+                                      </Chip>
+                                    )
+                                  })}
+                                </View>
+                              )}
+                            </View>
+                          )
+                        } else {
+                          return (
+                            <View key={entry._key} style={styles.textEntry}>
+                              <View style={styles.textEntryHeader}>
+                                <View style={{ flex: 1 }} />
+                                <IconButton icon="close" iconColor={Colors.mutedForeground} size={16}
+                                  onPress={() => removeEntry(sIdx, eIdx)} style={styles.entryCloseBtn} />
+                              </View>
+                              <TextInput label="Text (DE)" value={entry.content_de}
+                                onChangeText={v => updateTextEntry(sIdx, eIdx, 'content_de', v)}
+                                mode="outlined" outlineColor={Colors.border} activeOutlineColor={Colors.primary}
+                                textColor={Colors.foreground} multiline
+                                style={[styles.input, { backgroundColor: Colors.background }]} />
+                              <TextInput label="Text (RU)" value={entry.content_ru}
+                                onChangeText={v => updateTextEntry(sIdx, eIdx, 'content_ru', v)}
+                                mode="outlined" outlineColor={Colors.border} activeOutlineColor={Colors.primary}
+                                textColor={Colors.foreground} multiline
+                                style={[styles.input, { backgroundColor: Colors.background }]} />
+                            </View>
+                          )
+                        }
+                      })}
+                    </View>
+                  )}
+
+                  <View style={styles.addEntryRow}>
+                    <Button icon="dance-ballroom" mode="outlined" compact
+                      onPress={() => setShowDancePicker({ sectionIdx: sIdx })}
+                      style={styles.addBtn} textColor={Colors.primary}>
+                      {t('addAnotherDance')}
+                    </Button>
+                    <Button icon="text" mode="outlined" compact
+                      onPress={() => addTextEntry(sIdx)}
+                      style={styles.addBtn} textColor={Colors.mutedForeground}>
+                      {t('addText')}
+                    </Button>
+                  </View>
+                </Card.Content>
+              </Card>
+            ))}
+
+            <Button icon="plus" mode="outlined" onPress={addSection} style={styles.addSectionBtn} textColor={Colors.primary}>
+              {t('addSection')}
+            </Button>
+          </>
+        )}
 
         <Button mode="contained" onPress={handleSubmit} loading={isSaving} disabled={isSaving}
           style={styles.submitBtn} buttonColor={Colors.primary} textColor={Colors.primaryForeground}>
@@ -282,6 +365,8 @@ const styles = StyleSheet.create({
   sectionCard: { marginBottom: 12, backgroundColor: Colors.card, borderColor: Colors.border },
   sectionCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   sectionNum: { color: Colors.primary, fontFamily: Fonts.bodySemiBold },
+  sectionsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  editOrderBtn: { borderRadius: 6 },
   entriesList: { marginBottom: 8, gap: 6 },
   danceEntry: { backgroundColor: Colors.muted, borderRadius: 6, paddingVertical: 4, paddingRight: 4 },
   danceEntryRow: { flexDirection: 'row', alignItems: 'center', paddingLeft: 12 },
