@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text, List, Divider, Button, Avatar, ActivityIndicator, Switch, Snackbar } from 'react-native-paper'
+import { useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/hooks/useAuth'
+import { toastService } from '@/lib/toastService'
 import { useMusic } from '@/hooks/useMusic'
 import { isTrackDownloaded, downloadTrackFile, deleteAllTrackFiles } from '@/hooks/useTrackDownload'
 import { getWifiOnlySetting, setWifiOnlySetting, canDownloadNow } from '@/lib/downloadPrefs'
@@ -12,6 +14,7 @@ import { Fonts } from '@/lib/fonts'
 export default function SettingsScreen() {
   const { t, language, setLanguage } = useLanguage()
   const { user, signOut } = useAuth()
+  const router = useRouter()
   const { data: allTracks = [] } = useMusic()
 
   const [dlState, setDlState] = useState<'idle' | 'downloading' | 'done'>('idle')
@@ -174,15 +177,27 @@ export default function SettingsScreen() {
       <Divider style={styles.divider} />
 
       <View style={styles.logoutSection}>
-        <Button
-          mode="outlined"
-          icon="logout"
-          onPress={signOut}
-          textColor={Colors.destructive}
-          style={styles.logoutBtn}
-        >
-          {t('logout')}
-        </Button>
+        {user ? (
+          <Button
+            mode="outlined"
+            icon="logout"
+            onPress={async () => { await signOut(); toastService.show('toastLoggedOut') }}
+            textColor={Colors.destructive}
+            style={styles.logoutBtn}
+          >
+            {t('logout')}
+          </Button>
+        ) : (
+          <Button
+            mode="outlined"
+            icon="login"
+            onPress={() => router.push('/(auth)/login')}
+            textColor={Colors.primary}
+            style={styles.loginBtn}
+          >
+            {t('login')}
+          </Button>
+        )}
       </View>
 
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={4000}>
@@ -215,4 +230,5 @@ const styles = StyleSheet.create({
   deleteBtn: { borderRadius: 6, borderColor: Colors.destructive },
   logoutSection: { padding: 24 },
   logoutBtn: { borderColor: Colors.destructive },
+  loginBtn: { borderColor: Colors.primary },
 })
