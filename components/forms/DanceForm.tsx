@@ -79,11 +79,10 @@ export default function DanceForm({ danceId }: Props) {
   const [difficulty, setDifficulty] = useState('')
   const [diffMenuVisible, setDiffMenuVisible] = useState(false)
 
-  // Videos
-  const [youtubeVideoId, setYoutubeVideoId] = useState<string | undefined>(undefined)
-  const [youtubeUrl, setYoutubeUrl] = useState('')
-  const [uploadedVideos, setUploadedVideos] = useState<VideoEntry[]>([])
+  // Videos — unified list (youtube + uploaded)
+  const [videos, setVideos] = useState<VideoEntry[]>([])
   const [newVideoType, setNewVideoType] = useState<'youtube' | 'uploaded'>('youtube')
+  const [newYoutubeUrl, setNewYoutubeUrl] = useState('')
 
   // Figures
   const [figures, setFigures] = useState<FigureEntry[]>([])
@@ -122,13 +121,9 @@ export default function DanceForm({ danceId }: Props) {
       setSchemeRu(existing.scheme_ru ?? '')
       setDifficulty(existing.difficulty ?? '')
 
-      const ytVideo = (existing.dance_videos ?? []).find(v => v.video_type === 'youtube')
-      setYoutubeVideoId(ytVideo?.id)
-      setYoutubeUrl(ytVideo?.url ?? '')
-      setUploadedVideos(
-        [...(existing.dance_videos ?? [])].filter(v => v.video_type === 'uploaded')
-          .sort((a, b) => a.order_index - b.order_index)
-          .map(v => ({ id: v.id, video_type: 'uploaded' as const, url: v.url }))
+      setVideos(
+        [...(existing.dance_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
+          .map(v => ({ id: v.id, video_type: v.video_type, url: v.url }))
       )
 
       setFigures(
@@ -170,13 +165,20 @@ export default function DanceForm({ danceId }: Props) {
     const result = await DocumentPicker.getDocumentAsync({ type: ['video/*'] })
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0]
-      setUploadedVideos(prev => [...prev, {
+      setVideos(prev => [...prev, {
         video_type: 'uploaded',
         url: asset.name ?? 'video',
         localUri: asset.uri,
         mimeType: asset.mimeType ?? 'video/mp4',
       }])
     }
+  }
+
+  const addYoutubeVideo = () => {
+    const url = newYoutubeUrl.trim()
+    if (!url) return
+    setVideos(prev => [...prev, { video_type: 'youtube', url }])
+    setNewYoutubeUrl('')
   }
 
   const addFigure = () => {
@@ -240,9 +242,9 @@ export default function DanceForm({ danceId }: Props) {
         return f
       }))
 
-      // Upload new video files
+      // Upload new video files, keep existing ones as-is
       step = 'upload dance videos'
-      const resolvedUploads = await Promise.all(uploadedVideos.map(async (v) => {
+      const allVideos = await Promise.all(videos.map(async (v) => {
         if (v.localUri && v.mimeType) {
           const ext = v.mimeType.split('/')[1] ?? 'mp4'
           const url = await uploadFile('videos', generateFileName('video', ext), v.localUri, v.mimeType)
@@ -250,11 +252,6 @@ export default function DanceForm({ danceId }: Props) {
         }
         return { id: v.id, video_type: v.video_type, url: v.url }
       }))
-
-      const allVideos: Array<{ id?: string; video_type: string; url: string }> = [...resolvedUploads]
-      if (youtubeUrl.trim()) {
-        allVideos.unshift({ id: youtubeVideoId, video_type: 'youtube', url: youtubeUrl.trim() })
-      }
 
       let finalDanceId: string
       if (isEdit && danceId) {
@@ -397,14 +394,15 @@ export default function DanceForm({ danceId }: Props) {
 
         {/* Videos */}
         <Text style={styles.sectionHeader}>{t('watchVideo')}</Text>
-        {uploadedVideos.map((v, idx) => (
+        {videos.map((v, idx) => (
           <Card key={idx} style={styles.itemCard} mode="outlined">
             <Card.Content style={styles.itemCardRow}>
-              <Text variant="bodySmall" style={styles.itemUrl} numberOfLines={1}>
+              <Icon source={v.video_type === 'youtube' ? 'youtube' : 'video'} size={16} color={Colors.mutedForeground} />
+              <Text variant="bodySmall" style={[styles.itemUrl, { marginLeft: 8 }]} numberOfLines={1}>
                 {v.localUri ? `📎 ${v.url}` : v.url}
               </Text>
               <IconButton icon="delete" iconColor={Colors.destructive} size={16}
-                onPress={() => setUploadedVideos(prev => prev.filter((_, i) => i !== idx))} />
+                onPress={() => setVideos(prev => prev.filter((_, i) => i !== idx))} />
             </Card.Content>
           </Card>
         ))}
@@ -418,14 +416,19 @@ export default function DanceForm({ danceId }: Props) {
           style={styles.segmented}
         />
         {newVideoType === 'youtube' ? (
-          <TextInput
-            label={t('youtubeUrl')}
-            value={youtubeUrl}
-            onChangeText={setYoutubeUrl}
-            placeholder={t('youtubePlaceholder')}
-            {...inputProps}
-            style={[styles.input, { marginBottom: 0 }]}
-          />
+          <>
+            <TextInput
+              label={t('youtubeUrl')}
+              value={newYoutubeUrl}
+              onChangeText={setNewYoutubeUrl}
+              placeholder={t('youtubePlaceholder')}
+              {...inputProps}
+            />
+            <Button mode="outlined" icon="plus" onPress={addYoutubeVideo}
+              style={styles.addSectionBtn} textColor={Colors.primary}>
+              {t('addYoutubeVideo')}
+            </Button>
+          </>
         ) : (
           <Button mode="outlined" icon="folder-open" onPress={pickVideoFile}
             style={[styles.pickBtn, { marginBottom: 0 }]} textColor={Colors.primary}>
