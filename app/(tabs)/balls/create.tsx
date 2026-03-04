@@ -175,7 +175,7 @@ export default function BallFormScreen() {
       if (isEdit && edit) await updateBall.mutateAsync({ id: edit, data: { name_de: nameDe, name_ru: nameRu, date, place_de: placeDe, place_ru: placeRu, sections: formData } })
       else await createBall.mutateAsync({ name_de: nameDe, name_ru: nameRu, date, place_de: placeDe, place_ru: placeRu, sections: formData })
       router.back()
-    } catch (e: any) { if (!isNetworkError(e)) setError(e.message ?? t('error')) }
+    } catch (e: any) { if (!isNetworkError(e)) setError(t('toastFailedSaveBall')) }
   }
 
   if (isEdit && loadingExisting) return <ActivityIndicator style={{ flex: 1 }} size="large" color={Colors.primary} />

@@ -23,7 +23,7 @@ export default function SignupScreen() {
     setError('')
     const { error: authError } = await supabase.auth.signUp({ email, password })
     setLoading(false)
-    if (authError) setError(authError.message)
+    if (authError) setError(t('authError'))
     else setSuccess(true)
   }
 

@@ -312,7 +312,7 @@ export default function DanceForm({ danceId }: Props) {
       await syncMusicLinks.mutateAsync({ danceId: finalDanceId, musicIds })
       router.back()
     } catch (e: any) {
-      if (!isNetworkError(e)) setError(`[${step}] ${e.message ?? t('error')}`)
+      if (!isNetworkError(e)) setError(t('toastFailedSaveDance'))
     } finally {
       setUploading(false)
     }

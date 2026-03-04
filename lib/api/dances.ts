@@ -71,7 +71,7 @@ export async function updateDance(id: string, danceData: Partial<Dance>): Promis
   if (error) throw error
 }
 
-export async function deleteDance(id: string): Promise<{ success: boolean; code?: string; message?: string }> {
+export async function deleteDance(id: string): Promise<{ success: boolean; code?: string; ballNames?: string[] }> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
@@ -82,12 +82,8 @@ export async function deleteDance(id: string): Promise<{ success: boolean; code?
     .eq('section_dances.dance_id', id)
 
   if (refs && refs.length > 0) {
-    const ballNames = Array.from(new Set((refs as any[]).map(r => (r.balls as any)?.name).filter(Boolean)))
-    return {
-      success: false,
-      code: 'DANCE_IN_BALLS',
-      message: `Dance is used in: ${ballNames.join(', ')}`,
-    }
+    const ballNames = Array.from(new Set((refs as any[]).map(r => (r.balls as any)?.name).filter(Boolean))) as string[]
+    return { success: false, code: 'DANCE_IN_BALLS', ballNames }
   }
 
   // Collect music IDs

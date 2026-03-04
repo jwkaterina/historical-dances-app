@@ -54,7 +54,16 @@ export default function DanceDetailScreen() {
 
   const handleDelete = async () => {
     const result = await deleteMutation.mutateAsync(dance.id)
-    if (!result.success) { setSnackbar(result.message ?? t('toastFailedDeleteDance')); setShowDelete(false); return }
+    if (!result.success) {
+      if (result.code === 'DANCE_IN_BALLS' && result.ballNames) {
+        const label = result.ballNames.length === 1 ? t('toastDanceUsedInBall') : t('toastDanceUsedInBalls')
+        setSnackbar(`${label} ${result.ballNames.join(', ')}. ${t('toastRemoveFromBallsFirst')}`)
+      } else {
+        setSnackbar(t('toastFailedDeleteDance'))
+      }
+      setShowDelete(false)
+      return
+    }
     router.back()
   }
 

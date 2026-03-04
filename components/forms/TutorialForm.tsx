@@ -89,9 +89,9 @@ export default function TutorialForm({ tutorialId }: Props) {
 
   const handleSubmit = async () => {
     if (!titleDe.trim() || !titleRu.trim()) { setError(t('toastNameRequiredBothLanguages')); return }
-    if (type === 'video' && videoType === 'youtube' && !url.trim()) { setError(t('youtubeUrl') + ' ' + t('required') || 'URL required'); return }
+    if (type === 'video' && videoType === 'youtube' && !url.trim()) { setError(t('urlRequired')); return }
     if ((type === 'pdf' || type === 'image' || (type === 'video' && videoType === 'uploaded')) && !url.trim()) {
-      setError('File required'); return
+      setError(t('fileRequired')); return
     }
 
     try {
@@ -120,7 +120,7 @@ export default function TutorialForm({ tutorialId }: Props) {
       }
       router.back()
     } catch (e: any) {
-      if (!isNetworkError(e)) setError(e.message ?? t(isEdit ? 'toastFailedUpdateTutorial' : 'toastFailedCreateTutorial'))
+      if (!isNetworkError(e)) setError(t(isEdit ? 'toastFailedUpdateTutorial' : 'toastFailedCreateTutorial'))
     } finally {
       setUploading(false)
     }

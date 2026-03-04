@@ -43,7 +43,7 @@ export default function CategoriesScreen() {
       setNewDe(''); setNewRu('')
       setSnackbar(t('toastCategoryCreated'))
     } catch (e: any) {
-      if (!isNetworkError(e)) setSnackbar(e.message ?? 'Error')
+      if (!isNetworkError(e)) setSnackbar(t('toastFailedCreateCategory'))
     }
   }
 
@@ -58,7 +58,7 @@ export default function CategoriesScreen() {
       setEditId(null)
       setSnackbar(t('toastCategoryUpdated'))
     } catch (e: any) {
-      if (!isNetworkError(e)) setSnackbar(e.message ?? 'Error')
+      if (!isNetworkError(e)) setSnackbar(t('toastFailedUpdateCategory'))
     }
   }
 
@@ -70,7 +70,7 @@ export default function CategoriesScreen() {
       setSnackbar(t('toastCategoryDeleted'))
     } catch (e: any) {
       setDeleteTarget(null)
-      if (!isNetworkError(e)) setSnackbar(e.message ?? 'Error')
+      if (!isNetworkError(e)) setSnackbar(t('toastFailedDeleteCategory'))
     }
   }
 

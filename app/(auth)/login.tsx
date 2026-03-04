@@ -21,7 +21,7 @@ export default function LoginScreen() {
     setError('')
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (authError) setError(authError.message)
+    if (authError) setError(t('authError'))
   }
 
   return (

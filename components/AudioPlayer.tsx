@@ -4,6 +4,7 @@ import { Text, IconButton, ProgressBar } from 'react-native-paper'
 import { Audio } from 'expo-av'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
+import { toastService } from '@/lib/toastService'
 
 interface Props {
   url: string
@@ -44,7 +45,7 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
         soundRef.current = s
         setIsPlaying(true)
       } catch (e) {
-        console.error('Audio load error', e)
+        toastService.show('toastAudioLoadError')
       }
     }
 
