@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useTutorial, useTutorialCategories, useCreateTutorial, useUpdateTutorial } from '@/hooks/useTutorials'
 import { uploadFile, generateFileName } from '@/lib/upload'
+import { isNetworkError } from '@/lib/toastService'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 
@@ -119,7 +120,7 @@ export default function TutorialForm({ tutorialId }: Props) {
       }
       router.back()
     } catch (e: any) {
-      setError(e.message ?? t(isEdit ? 'toastFailedUpdateTutorial' : 'toastFailedCreateTutorial'))
+      if (!isNetworkError(e)) setError(e.message ?? t(isEdit ? 'toastFailedUpdateTutorial' : 'toastFailedCreateTutorial'))
     } finally {
       setUploading(false)
     }

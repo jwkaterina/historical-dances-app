@@ -3,6 +3,7 @@ import { Card, Text, IconButton } from 'react-native-paper'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import type { MusicTrack } from '@/types/database'
+import DownloadButton from '@/components/DownloadButton'
 
 interface Props {
   track: MusicTrack
@@ -41,6 +42,7 @@ export default function MusicCard({ track, isPlaying, language, onPress }: Props
             {track.genre && <Text variant="bodySmall" style={styles.metaText}>{track.genre}</Text>}
           </View>
         </View>
+        <DownloadButton trackId={track.id} audioUrl={track.audio_url} />
         <IconButton
           icon={isPlaying ? 'pause-circle' : 'play-circle'}
           iconColor={isPlaying ? Colors.primary : Colors.accent}

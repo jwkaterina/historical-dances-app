@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native'
-import { Text, Card, Divider, Button, ActivityIndicator, Chip, Icon } from 'react-native-paper'
+import { Text, Card, Divider, Button, ActivityIndicator, Chip, Icon, Snackbar } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { format } from 'date-fns'
 import { useState, useMemo } from 'react'
@@ -10,6 +10,8 @@ import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import AudioPlayer from '@/components/AudioPlayer'
+import DownloadButton from '@/components/DownloadButton'
+import { resolvePlayUrl } from '@/hooks/useTrackDownload'
 import type { BallSection, SectionDance, SectionText, MusicTrack } from '@/types/database'
 
 type SectionEntry =
@@ -30,8 +32,10 @@ export default function BallDetailScreen() {
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
   const [activeTrack, setActiveTrack] = useState<{ key: string; trackId: string } | null>(null)
+  const [playUrl, setPlayUrl] = useState<string | null>(null)
+  const [snackbar, setSnackbar] = useState('')
 
-  const { data: ball, isLoading } = useBall(id)
+  const { data: ball, isLoading, isError } = useBall(id)
   const deleteMutation = useDeleteBall()
   const { data: dances = [] } = useDancesForBall()
 
@@ -43,7 +47,21 @@ export default function BallDetailScreen() {
     return map
   }, [dances])
 
+  const handleTrackPress = async (entryKey: string, track: MusicTrack) => {
+    if (activeTrack?.key === entryKey && activeTrack?.trackId === track.id) {
+      setActiveTrack(null); setPlayUrl(null); return
+    }
+    if (!track.audio_url) { setActiveTrack({ key: entryKey, trackId: track.id }); setPlayUrl(null); return }
+    try {
+      const url = await resolvePlayUrl(track.id, track.audio_url)
+      setActiveTrack({ key: entryKey, trackId: track.id }); setPlayUrl(url)
+    } catch {
+      setSnackbar(t('toastNoInternetForPlayback'))
+    }
+  }
+
   if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
+  if (isError && !ball) return <View style={styles.center}><Text style={{ color: Colors.mutedForeground, textAlign: 'center', padding: 24 }}>{t('dataUnavailableOffline')}</Text></View>
   if (!ball) return <View style={styles.center}><Text style={{ color: Colors.mutedForeground }}>{t('ballNotFound')}</Text></View>
 
   const name = (language === 'de' ? ball.name_de : ball.name_ru) ?? ball.name ?? ''
@@ -58,6 +76,7 @@ export default function BallDetailScreen() {
   }
 
   return (
+    <>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text variant="headlineMedium" style={styles.title}>{name}</Text>
 
@@ -108,27 +127,29 @@ export default function BallDetailScreen() {
                         {tracks.map(track => {
                           const isActive = activeTrack?.key === entryKey && activeTrack?.trackId === track.id
                           return (
-                            <Chip
-                              key={track.id}
-                              compact
-                              icon="music-note"
-                              selected={isActive}
-                              onPress={() => setActiveTrack(isActive ? null : { key: entryKey, trackId: track.id })}
-                              style={[styles.musicChip, isActive && styles.musicChipActive]}
-                              textStyle={{ fontSize: 11, color: isActive ? Colors.primaryForeground : Colors.mutedForeground }}
-                            >
-                              {track.title}
-                            </Chip>
+                            <View key={track.id} style={styles.trackChipRow}>
+                              <Chip
+                                compact
+                                icon={isActive ? 'pause-circle-outline' : 'play-circle-outline'}
+                                selected={isActive}
+                                onPress={() => handleTrackPress(entryKey, track)}
+                                style={[styles.musicChip, isActive && styles.musicChipActive]}
+                                textStyle={{ fontSize: 11, color: isActive ? Colors.primaryForeground : Colors.mutedForeground }}
+                              >
+                                {track.title}
+                              </Chip>
+                              <DownloadButton trackId={track.id} audioUrl={track.audio_url ?? null} />
+                            </View>
                           )
                         })}
                       </View>
                     )}
-                    {activeTrack?.key === entryKey && trackById[activeTrack.trackId] && (
+                    {activeTrack?.key === entryKey && playUrl && trackById[activeTrack.trackId] && (
                       <AudioPlayer
-                        url={trackById[activeTrack.trackId].audio_url!}
+                        url={playUrl}
                         title={trackById[activeTrack.trackId].title}
                         artist={trackById[activeTrack.trackId].artist ?? undefined}
-                        onClose={() => setActiveTrack(null)}
+                        onClose={() => { setActiveTrack(null); setPlayUrl(null) }}
                       />
                     )}
                   </View>
@@ -173,6 +194,8 @@ export default function BallDetailScreen() {
         loading={deleteMutation.isPending}
       />
     </ScrollView>
+    <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={4000}>{snackbar}</Snackbar>
+    </>
   )
 }
 
@@ -193,6 +216,7 @@ const styles = StyleSheet.create({
   num: { color: Colors.primaryForeground, fontFamily: Fonts.heading, fontSize: 11 },
   danceName: { flex: 1, color: Colors.primary },
   musicRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingLeft: 34, paddingBottom: 6 },
+  trackChipRow: { flexDirection: 'row', alignItems: 'center' },
   musicChip: { borderRadius: 4, backgroundColor: Colors.muted },
   musicChipActive: { backgroundColor: Colors.primary },
   textCard: { marginVertical: 4, backgroundColor: Colors.cardSecondary, borderColor: Colors.border },

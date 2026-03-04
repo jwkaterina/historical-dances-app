@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useTutorial, useDeleteTutorial } from '@/hooks/useTutorials'
 import { Colors } from '@/lib/colors'
+import { isNetworkError } from '@/lib/toastService'
 import { Fonts } from '@/lib/fonts'
 import VideoPlayer from '@/components/VideoPlayer'
 import ConfirmDialog from '@/components/ConfirmDialog'
@@ -23,17 +24,22 @@ export default function TutorialDetailScreen() {
   const [snackbar, setSnackbar] = useState('')
   const [pdfHeight, setPdfHeight] = useState(SCREEN_WIDTH * 1.414)
 
-  const { data: tutorial, isLoading } = useTutorial(id)
+  const { data: tutorial, isLoading, isError } = useTutorial(id)
   const deleteMutation = useDeleteTutorial()
 
   const handleDelete = async () => {
     if (!tutorial) return
     const { error } = await deleteMutation.mutateAsync(tutorial.id).then(() => ({ error: null })).catch(e => ({ error: e }))
-    if (error) { setSnackbar(error.message ?? t('toastFailedDeleteTutorial')); setShowDelete(false); return }
+    if (error) { setShowDelete(false); if (!isNetworkError(error)) setSnackbar(error.message ?? t('toastFailedDeleteTutorial')); return }
     router.back()
   }
 
   if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
+  if (isError && !tutorial) return (
+    <View style={styles.center}>
+      <Text style={{ color: Colors.mutedForeground, textAlign: 'center', padding: 24 }}>{t('dataUnavailableOffline')}</Text>
+    </View>
+  )
   if (!tutorial) return (
     <View style={styles.center}>
       <Text style={{ color: Colors.mutedForeground }}>{t('tutorialNotFound')}</Text>

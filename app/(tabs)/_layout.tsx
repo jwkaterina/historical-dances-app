@@ -5,10 +5,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
+import { usePrefetchAll } from '@/hooks/usePrefetchAll'
 
 export default function TabsLayout() {
   const { t } = useLanguage()
   const insets = useSafeAreaInsets()
+  usePrefetchAll()
 
   return (
     <Tabs

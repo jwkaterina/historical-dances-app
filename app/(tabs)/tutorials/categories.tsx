@@ -9,6 +9,7 @@ import {
 } from '@/hooks/useTutorials'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import { Colors } from '@/lib/colors'
+import { isNetworkError } from '@/lib/toastService'
 import { Fonts } from '@/lib/fonts'
 import type { TutorialCategory } from '@/types/database'
 
@@ -42,7 +43,7 @@ export default function CategoriesScreen() {
       setNewDe(''); setNewRu('')
       setSnackbar(t('toastCategoryCreated'))
     } catch (e: any) {
-      setSnackbar(e.message ?? 'Error')
+      if (!isNetworkError(e)) setSnackbar(e.message ?? 'Error')
     }
   }
 
@@ -57,7 +58,7 @@ export default function CategoriesScreen() {
       setEditId(null)
       setSnackbar(t('toastCategoryUpdated'))
     } catch (e: any) {
-      setSnackbar(e.message ?? 'Error')
+      if (!isNetworkError(e)) setSnackbar(e.message ?? 'Error')
     }
   }
 
@@ -69,7 +70,7 @@ export default function CategoriesScreen() {
       setSnackbar(t('toastCategoryDeleted'))
     } catch (e: any) {
       setDeleteTarget(null)
-      setSnackbar(e.message ?? 'Error')
+      if (!isNetworkError(e)) setSnackbar(e.message ?? 'Error')
     }
   }
 

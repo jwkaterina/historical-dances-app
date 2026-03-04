@@ -11,6 +11,9 @@ import { Fonts } from '@/lib/fonts'
 import AudioPlayer from '@/components/AudioPlayer'
 import VideoPlayer from '@/components/VideoPlayer'
 import ConfirmDialog from '@/components/ConfirmDialog'
+import DownloadButton from '@/components/DownloadButton'
+import { resolvePlayUrl } from '@/hooks/useTrackDownload'
+import { isNetworkError } from '@/lib/toastService'
 import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/database'
 
 
@@ -22,8 +25,20 @@ export default function DanceDetailScreen() {
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null)
+  const [playUrl, setPlayUrl] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState('')
   const [expandedFigures, setExpandedFigures] = useState<Set<string>>(new Set())
+
+  const handleTrackPress = useCallback(async (track: MusicTrack) => {
+    if (currentTrack?.id === track.id) { setCurrentTrack(null); setPlayUrl(null); return }
+    if (!track.audio_url) { setCurrentTrack(track); setPlayUrl(null); return }
+    try {
+      const url = await resolvePlayUrl(track.id, track.audio_url)
+      setCurrentTrack(track); setPlayUrl(url)
+    } catch {
+      setSnackbar(t('toastNoInternetForPlayback'))
+    }
+  }, [currentTrack, t])
 
   const toggleFigure = useCallback((id: string) => {
     setExpandedFigures(prev => {
@@ -33,7 +48,7 @@ export default function DanceDetailScreen() {
     })
   }, [])
 
-  const { data: dance, isLoading } = useDance(id)
+  const { data: dance, isLoading, isError } = useDance(id)
   const deleteMutation = useDeleteDance()
 
   const name = dance ? ((language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? '') : ''
@@ -53,6 +68,12 @@ export default function DanceDetailScreen() {
     <>
       <Stack.Screen options={headerOptions} />
       <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
+    </>
+  )
+  if (isError && !dance) return (
+    <>
+      <Stack.Screen options={headerOptions} />
+      <View style={styles.center}><Text style={{ color: Colors.mutedForeground, textAlign: 'center', padding: 24 }}>{t('dataUnavailableOffline')}</Text></View>
     </>
   )
   if (!dance) return (
@@ -179,13 +200,14 @@ export default function DanceDetailScreen() {
             <Text variant="bodyMedium" style={styles.emptyText}>{t('noMusicAssociated')}</Text>
           ) : musicTracks.map((track: MusicTrack) => (
             <Card key={track.id} style={styles.musicCard} mode="outlined"
-              onPress={() => setCurrentTrack(t => t?.id === track.id ? null : track)}>
+              onPress={() => handleTrackPress(track)}>
               <Card.Content style={styles.musicCardContent}>
                 <View style={{ flex: 1 }}>
                   <Text variant="titleSmall" style={styles.musicTitle}>{track.title}</Text>
                   {track.artist && <Text variant="bodySmall" style={styles.musicArtist}>{track.artist}</Text>}
                   {track.tempo && <Text variant="bodySmall" style={styles.musicMeta}>{track.tempo} BPM</Text>}
                 </View>
+                <DownloadButton trackId={track.id} audioUrl={track.audio_url ?? null} />
                 <Text style={{ fontSize: 20 }}>{currentTrack?.id === track.id ? '⏸' : '▶'}</Text>
               </Card.Content>
             </Card>
@@ -206,10 +228,10 @@ export default function DanceDetailScreen() {
         )}
       </ScrollView>
 
-      {currentTrack?.audio_url && (
+      {currentTrack && playUrl && (
         <View style={[styles.playerContainer, { paddingBottom: insets.bottom }]}>
-          <AudioPlayer url={currentTrack.audio_url} title={currentTrack.title}
-            artist={currentTrack.artist ?? undefined} onClose={() => setCurrentTrack(null)} />
+          <AudioPlayer url={playUrl} title={currentTrack.title}
+            artist={currentTrack.artist ?? undefined} onClose={() => { setCurrentTrack(null); setPlayUrl(null) }} />
         </View>
       )}
 

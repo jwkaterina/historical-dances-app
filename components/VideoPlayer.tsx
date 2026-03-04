@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { View, StyleSheet, ViewStyle, useWindowDimensions, TouchableOpacity } from 'react-native'
-import { Icon } from 'react-native-paper'
+import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
 import { Video, ResizeMode } from 'expo-av'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 import type { DanceVideo, FigureVideo } from '@/types/database'
 
 interface Props {
@@ -17,6 +20,16 @@ function getYouTubeId(url: string): string | null {
   return match ? match[1] : null
 }
 
+function VideoErrorPlaceholder({ width, height }: { width: number; height: number }) {
+  const { t } = useLanguage()
+  return (
+    <View style={[styles.errorBox, { width, height }]}>
+      <Icon source="video-off-outline" size={32} color={Colors.mutedForeground} />
+      <Text style={styles.errorText}>{t('videoLoadError')}</Text>
+    </View>
+  )
+}
+
 export default function VideoPlayer({ video, style }: Props) {
   const { width } = useWindowDimensions()
   const playerWidth = width - 32
@@ -26,18 +39,7 @@ export default function VideoPlayer({ video, style }: Props) {
     const videoId = getYouTubeId(video.url)
     if (!videoId) return null
     return (
-      <View style={[styles.container, style]}>
-        <YoutubeIframe
-          height={playerHeight}
-          width={playerWidth}
-          videoId={videoId}
-          webViewProps={{
-            scrollEnabled: false,
-            allowsInlineMediaPlayback: true,
-            mediaPlaybackRequiresUserAction: false,
-          }}
-        />
-      </View>
+      <YoutubePlayerWithError videoId={videoId} playerWidth={playerWidth} playerHeight={playerHeight} style={style} />
     )
   }
 
@@ -49,8 +51,49 @@ export default function VideoPlayer({ video, style }: Props) {
   return null
 }
 
+function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: { videoId: string; playerWidth: number; playerHeight: number; style?: ViewStyle }) {
+  const [hasError, setHasError] = useState(false)
+
+  if (hasError) {
+    return (
+      <View style={[styles.container, style]}>
+        <VideoErrorPlaceholder width={playerWidth} height={playerHeight} />
+      </View>
+    )
+  }
+
+  return (
+    <View style={[styles.container, style]}>
+      <YoutubeIframe
+        height={playerHeight}
+        width={playerWidth}
+        videoId={videoId}
+        webViewProps={{
+          scrollEnabled: false,
+          allowsInlineMediaPlayback: true,
+          mediaPlaybackRequiresUserAction: false,
+          renderError: () => {
+            setHasError(true)
+            return <View />
+          },
+          onError: () => setHasError(true),
+        }}
+      />
+    </View>
+  )
+}
+
 function UploadedVideoPlayer({ url, width, height, style }: { url: string; width: number; height: number; style?: ViewStyle }) {
   const [playing, setPlaying] = useState(false)
+  const [hasError, setHasError] = useState(false)
+
+  if (hasError) {
+    return (
+      <View style={[styles.container, style]}>
+        <VideoErrorPlaceholder width={width} height={height} />
+      </View>
+    )
+  }
 
   return (
     <View style={[styles.container, style]}>
@@ -61,7 +104,10 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
         shouldPlay={playing}
         isLooping={false}
         onPlaybackStatusUpdate={status => {
-          if (!status.isLoaded) return
+          if (!status.isLoaded) {
+            if (status.error) setHasError(true)
+            return
+          }
           if (status.didJustFinish) setPlaying(false)
         }}
       />
@@ -93,5 +139,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorBox: {
+    borderRadius: 8,
+    backgroundColor: Colors.muted,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  errorText: {
+    color: Colors.mutedForeground,
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    textAlign: 'center',
   },
 })

@@ -13,6 +13,7 @@ import { useMusic } from '@/hooks/useMusic'
 import { useTutorials } from '@/hooks/useTutorials'
 import { createMusicTrack } from '@/lib/api/music'
 import { uploadFile, generateFileName } from '@/lib/upload'
+import { isNetworkError } from '@/lib/toastService'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import type { Tutorial } from '@/types/database'
@@ -311,7 +312,7 @@ export default function DanceForm({ danceId }: Props) {
       await syncMusicLinks.mutateAsync({ danceId: finalDanceId, musicIds })
       router.back()
     } catch (e: any) {
-      setError(`[${step}] ${e.message ?? t('error')}`)
+      if (!isNetworkError(e)) setError(`[${step}] ${e.message ?? t('error')}`)
     } finally {
       setUploading(false)
     }
