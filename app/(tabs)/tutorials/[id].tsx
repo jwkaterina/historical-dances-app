@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ScrollView, StyleSheet, View, Image, Modal, TouchableOpacity, Pressable, Dimensions } from 'react-native'
 import WebView from 'react-native-webview'
 import { Text, ActivityIndicator, Chip, Button, Snackbar } from 'react-native-paper'
-import { useLocalSearchParams, Stack, useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useTutorial, useDeleteTutorial } from '@/hooks/useTutorials'
@@ -54,7 +54,6 @@ export default function TutorialDetailScreen() {
   const typeLabel = t(('type' + tutorial.type.charAt(0).toUpperCase() + tutorial.type.slice(1)) as any)
   return (
     <>
-      <Stack.Screen options={{ title }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Text variant="headlineMedium" style={styles.title}>{title}</Text>
 

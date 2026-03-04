@@ -1,5 +1,7 @@
-import { Text } from 'react-native'
+import { Text, View } from 'react-native'
 import { Tabs } from 'expo-router'
+import AudioPlayer from '@/components/AudioPlayer'
+import { useAudioPlayer } from '@/contexts/AudioPlayerContext'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -10,9 +12,13 @@ import { usePrefetchAll } from '@/hooks/usePrefetchAll'
 export default function TabsLayout() {
   const { t } = useLanguage()
   const insets = useSafeAreaInsets()
+  const { currentTrack, playUrl, stop } = useAudioPlayer()
   usePrefetchAll()
 
+  const tabBarHeight = 62 + insets.bottom
+
   return (
+    <View style={{ flex: 1 }}>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.background,
@@ -42,13 +48,15 @@ export default function TabsLayout() {
         headerShown: true,
       }}
     >
+      <Tabs.Screen name="index" options={{ href: null }} />
       <Tabs.Screen
-        name="index"
+        name="dances"
         options={{
           title: t('dances'),
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="dance-ballroom" size={size} color={color} />
           ),
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -89,6 +97,30 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="ball-info"
+        options={{ href: null, headerShown: false }}
+      />
     </Tabs>
+    {currentTrack && playUrl && (
+      <View style={{
+        position: 'absolute',
+        bottom: tabBarHeight,
+        left: 0, right: 0,
+        elevation: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      }}>
+        <AudioPlayer
+          url={playUrl}
+          title={currentTrack.title}
+          artist={currentTrack.artist ?? undefined}
+          onClose={stop}
+        />
+      </View>
+    )}
+    </View>
   )
 }

@@ -6,13 +6,13 @@ import { Fonts } from '@/lib/fonts'
 import { StackActions } from '@react-navigation/native'
 import { useCallback } from 'react'
 
-export default function BallsLayout() {
+export default function DancesLayout() {
   const { t } = useLanguage()
   const navigation = useNavigation()
 
   useFocusEffect(useCallback(() => {
     const state = navigation.getState()
-    const tabRoute = state?.routes?.find((r: any) => r.name === 'balls')
+    const tabRoute = state?.routes?.find((r: any) => r.name === 'dances')
     if (tabRoute?.state?.key && (tabRoute.state as any).index > 0) {
       navigation.dispatch({ ...StackActions.popToTop(), target: tabRoute.state.key })
     }
@@ -32,9 +32,10 @@ export default function BallsLayout() {
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: t('balls') }} />
-      <Stack.Screen name="[id]" options={{ title: t('balls') }} />
-      <Stack.Screen name="create" options={{ title: t('createBall') }} />
+      <Stack.Screen name="index" options={{ title: t('dances') }} />
+      <Stack.Screen name="[id]" options={{ title: t('dances') }} />
+      <Stack.Screen name="create" options={{ title: t('createDance') }} />
+      <Stack.Screen name="edit/[id]" options={{ title: t('editDance') }} />
     </Stack>
   )
 }

@@ -1,5 +1,5 @@
 import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native'
-import { Text, Card, Divider, Button, ActivityIndicator, Chip, Icon, Snackbar } from 'react-native-paper'
+import { Text, Card, Divider, Button, ActivityIndicator, Chip, Icon } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { format } from 'date-fns'
 import { useState, useMemo } from 'react'
@@ -9,9 +9,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import ConfirmDialog from '@/components/ConfirmDialog'
-import AudioPlayer from '@/components/AudioPlayer'
 import DownloadButton from '@/components/DownloadButton'
-import { resolvePlayUrl } from '@/hooks/useTrackDownload'
+import { useAudioPlayer, PLAYER_HEIGHT } from '@/contexts/AudioPlayerContext'
 import type { BallSection, SectionDance, SectionText, MusicTrack } from '@/types/database'
 
 type SectionEntry =
@@ -31,9 +30,7 @@ export default function BallDetailScreen() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
-  const [activeTrack, setActiveTrack] = useState<{ key: string; trackId: string } | null>(null)
-  const [playUrl, setPlayUrl] = useState<string | null>(null)
-  const [snackbar, setSnackbar] = useState('')
+  const { currentTrack, play } = useAudioPlayer()
 
   const { data: ball, isLoading, isError } = useBall(id)
   const deleteMutation = useDeleteBall()
@@ -47,18 +44,6 @@ export default function BallDetailScreen() {
     return map
   }, [dances])
 
-  const handleTrackPress = async (entryKey: string, track: MusicTrack) => {
-    if (activeTrack?.key === entryKey && activeTrack?.trackId === track.id) {
-      setActiveTrack(null); setPlayUrl(null); return
-    }
-    if (!track.audio_url) { setActiveTrack({ key: entryKey, trackId: track.id }); setPlayUrl(null); return }
-    try {
-      const url = await resolvePlayUrl(track.id, track.audio_url)
-      setActiveTrack({ key: entryKey, trackId: track.id }); setPlayUrl(url)
-    } catch {
-      setSnackbar(t('toastNoInternetForPlayback'))
-    }
-  }
 
   if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
   if (isError && !ball) return <View style={styles.center}><Text style={{ color: Colors.mutedForeground, textAlign: 'center', padding: 24 }}>{t('dataUnavailableOffline')}</Text></View>
@@ -77,7 +62,7 @@ export default function BallDetailScreen() {
 
   return (
     <>
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, currentTrack && { paddingBottom: PLAYER_HEIGHT + 48 }]}>
       <Text variant="headlineMedium" style={styles.title}>{name}</Text>
 
       <View style={styles.meta}>
@@ -110,7 +95,6 @@ export default function BallDetailScreen() {
                 const danceName = dance ? (language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? '' : '—'
                 const musicIds = sd.music_ids ?? []
                 const tracks = musicIds.map(tid => trackById[tid]).filter(Boolean) as MusicTrack[]
-                const entryKey = `${section.id}-${idx}`
                 return (
                   <View key={idx}>
                     <View style={styles.entryRow}>
@@ -118,21 +102,21 @@ export default function BallDetailScreen() {
                         <Text variant="bodySmall" style={styles.num}>{num}</Text>
                       </View>
                       <Text variant="bodyMedium" style={styles.danceName}
-                        onPress={() => dance && router.push(`/dance/${dance.id}`)}>
+                        onPress={() => dance && router.push(`/dances/${dance.id}`)}>
                         {danceName}
                       </Text>
                     </View>
                     {tracks.length > 0 && (
                       <View style={styles.musicRow}>
                         {tracks.map(track => {
-                          const isActive = activeTrack?.key === entryKey && activeTrack?.trackId === track.id
+                          const isActive = currentTrack?.id === track.id
                           return (
                             <View key={track.id} style={styles.trackChipRow}>
                               <Chip
                                 compact
                                 icon={isActive ? 'pause-circle-outline' : 'play-circle-outline'}
                                 selected={isActive}
-                                onPress={() => handleTrackPress(entryKey, track)}
+                                onPress={() => play(track)}
                                 style={[styles.musicChip, isActive && styles.musicChipActive]}
                                 textStyle={{ fontSize: 11, color: isActive ? Colors.primaryForeground : Colors.mutedForeground }}
                               >
@@ -143,14 +127,6 @@ export default function BallDetailScreen() {
                           )
                         })}
                       </View>
-                    )}
-                    {activeTrack?.key === entryKey && playUrl && trackById[activeTrack.trackId] && (
-                      <AudioPlayer
-                        url={playUrl}
-                        title={trackById[activeTrack.trackId].title}
-                        artist={trackById[activeTrack.trackId].artist ?? undefined}
-                        onClose={() => { setActiveTrack(null); setPlayUrl(null) }}
-                      />
                     )}
                   </View>
                 )
@@ -194,8 +170,7 @@ export default function BallDetailScreen() {
         loading={deleteMutation.isPending}
       />
     </ScrollView>
-    <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={4000}>{snackbar}</Snackbar>
-    </>
+</>
   )
 }
 

@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { PaperProvider, Snackbar } from 'react-native-paper'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext'
+import { AudioPlayerProvider } from '@/contexts/AudioPlayerContext'
 import { toastService, isNetworkError } from '@/lib/toastService'
 import { useAuth } from '@/hooks/useAuth'
 import { lightTheme, darkTheme } from '@/lib/theme'
@@ -113,21 +114,21 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: SEVEN_DAYS }}>
       <LanguageProvider>
+        <AudioPlayerProvider>
         <PaperProvider theme={theme}>
           <SafeAreaProvider>
             <AuthGuard>
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(auth)" />
                 <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="dance" />
                 <Stack.Screen name="webview" />
-                <Stack.Screen name="ball-info" />
                 <Stack.Screen name="pdf-viewer" />
               </Stack>
             </AuthGuard>
             <GlobalSnackbar />
           </SafeAreaProvider>
         </PaperProvider>
+        </AudioPlayerProvider>
       </LanguageProvider>
     </PersistQueryClientProvider>
     </GestureHandlerRootView>

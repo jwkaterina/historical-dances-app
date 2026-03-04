@@ -1,44 +1,28 @@
 import { useState, useCallback } from 'react'
-import { ScrollView, StyleSheet, View, Text as RNText } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip, List } from 'react-native-paper'
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useDance, useDeleteDance } from '@/hooks/useDances'
 import { useAuth } from '@/hooks/useAuth'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
-import AudioPlayer from '@/components/AudioPlayer'
 import VideoPlayer from '@/components/VideoPlayer'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import DownloadButton from '@/components/DownloadButton'
-import { resolvePlayUrl } from '@/hooks/useTrackDownload'
-import { isNetworkError } from '@/lib/toastService'
+import { useAudioPlayer, PLAYER_HEIGHT } from '@/contexts/AudioPlayerContext'
 import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/database'
 
 
 export default function DanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const insets = useSafeAreaInsets()
   const { t, language } = useLanguage()
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
-  const [currentTrack, setCurrentTrack] = useState<MusicTrack | null>(null)
-  const [playUrl, setPlayUrl] = useState<string | null>(null)
   const [snackbar, setSnackbar] = useState('')
   const [expandedFigures, setExpandedFigures] = useState<Set<string>>(new Set())
-
-  const handleTrackPress = useCallback(async (track: MusicTrack) => {
-    if (currentTrack?.id === track.id) { setCurrentTrack(null); setPlayUrl(null); return }
-    if (!track.audio_url) { setCurrentTrack(track); setPlayUrl(null); return }
-    try {
-      const url = await resolvePlayUrl(track.id, track.audio_url)
-      setCurrentTrack(track); setPlayUrl(url)
-    } catch {
-      setSnackbar(t('toastNoInternetForPlayback'))
-    }
-  }, [currentTrack, t])
+  const { currentTrack, play } = useAudioPlayer()
 
   const toggleFigure = useCallback((id: string) => {
     setExpandedFigures(prev => {
@@ -53,35 +37,14 @@ export default function DanceDetailScreen() {
 
   const name = dance ? ((language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? '') : ''
 
-  const headerOptions = {
-    title: name,
-    headerShown: true,
-    headerStyle: { backgroundColor: Colors.foreground },
-    headerTintColor: Colors.background,
-    headerShadowVisible: false,
-    headerTitle: ({ children, tintColor }: any) => (
-      <RNText style={{ fontFamily: Fonts.heading, color: tintColor ?? Colors.background, fontSize: 17 }}>{children}</RNText>
-    ),
-  }
-
-  if (isLoading) return (
-    <>
-      <Stack.Screen options={headerOptions} />
-      <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
-    </>
-  )
+  if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
   if (isError && !dance) return (
-    <>
-      <Stack.Screen options={headerOptions} />
-      <View style={styles.center}><Text style={{ color: Colors.mutedForeground, textAlign: 'center', padding: 24 }}>{t('dataUnavailableOffline')}</Text></View>
-    </>
+    <View style={styles.center}><Text style={{ color: Colors.mutedForeground, textAlign: 'center', padding: 24 }}>{t('dataUnavailableOffline')}</Text></View>
   )
   if (!dance) return (
-    <>
-      <Stack.Screen options={headerOptions} />
-      <View style={styles.center}><Text style={{ color: Colors.mutedForeground }}>{t('noDancesFound')}</Text></View>
-    </>
+    <View style={styles.center}><Text style={{ color: Colors.mutedForeground }}>{t('noDancesFound')}</Text></View>
   )
+
   const description = (language === 'de' ? dance.description_de : dance.description_ru) ?? dance.description ?? ''
   const scheme = (language === 'de' ? dance.scheme_de : dance.scheme_ru) ?? dance.scheme ?? ''
   const videos = [...(dance.dance_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
@@ -97,8 +60,7 @@ export default function DanceDetailScreen() {
 
   return (
     <>
-      <Stack.Screen options={headerOptions} />
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={[styles.content, currentTrack && { paddingBottom: PLAYER_HEIGHT + 48 }]}>
         <Text variant="headlineMedium" style={styles.title}>{name}</Text>
 
         <View style={styles.meta}>
@@ -200,7 +162,7 @@ export default function DanceDetailScreen() {
             <Text variant="bodyMedium" style={styles.emptyText}>{t('noMusicAssociated')}</Text>
           ) : musicTracks.map((track: MusicTrack) => (
             <Card key={track.id} style={styles.musicCard} mode="outlined"
-              onPress={() => handleTrackPress(track)}>
+              onPress={() => play(track)}>
               <Card.Content style={styles.musicCardContent}>
                 <View style={{ flex: 1 }}>
                   <Text variant="titleSmall" style={styles.musicTitle}>{track.title}</Text>
@@ -216,7 +178,7 @@ export default function DanceDetailScreen() {
 
         {isAuthenticated && (
           <View style={styles.actions}>
-            <Button mode="outlined" icon="pencil" onPress={() => router.push(`/dance/edit/${dance.id}`)}
+            <Button mode="outlined" icon="pencil" onPress={() => router.push(`/dances/edit/${dance.id}`)}
               style={styles.actionBtn} textColor={Colors.primary}>
               {t('edit')}
             </Button>
@@ -227,13 +189,6 @@ export default function DanceDetailScreen() {
           </View>
         )}
       </ScrollView>
-
-      {currentTrack && playUrl && (
-        <View style={[styles.playerContainer, { paddingBottom: insets.bottom }]}>
-          <AudioPlayer url={playUrl} title={currentTrack.title}
-            artist={currentTrack.artist ?? undefined} onClose={() => { setCurrentTrack(null); setPlayUrl(null) }} />
-        </View>
-      )}
 
       <ConfirmDialog visible={showDelete} title={t('confirmDelete')} message={t('deleteConfirmMessage')}
         onConfirm={handleDelete} onDismiss={() => setShowDelete(false)} loading={deleteMutation.isPending} />
@@ -274,5 +229,5 @@ const styles = StyleSheet.create({
   typeBadgeText: { color: Colors.secondaryForeground, fontSize: 11, fontFamily: Fonts.body },
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   actionBtn: { flex: 1, borderColor: Colors.border },
-  playerContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, elevation: 8, backgroundColor: Colors.card },
+
 })

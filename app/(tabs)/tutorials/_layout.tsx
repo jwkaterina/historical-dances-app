@@ -1,11 +1,23 @@
 import { Text } from 'react-native'
-import { Stack } from 'expo-router'
+import { Stack, useNavigation, useFocusEffect } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
+import { StackActions } from '@react-navigation/native'
+import { useCallback } from 'react'
 
 export default function TutorialsLayout() {
   const { t } = useLanguage()
+  const navigation = useNavigation()
+
+  useFocusEffect(useCallback(() => {
+    const state = navigation.getState()
+    const tabRoute = state?.routes?.find((r: any) => r.name === 'tutorials')
+    if (tabRoute?.state?.key && (tabRoute.state as any).index > 0) {
+      navigation.dispatch({ ...StackActions.popToTop(), target: tabRoute.state.key })
+    }
+  }, [navigation]))
+
   return (
     <Stack
       screenOptions={{
