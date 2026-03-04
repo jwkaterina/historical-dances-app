@@ -22,7 +22,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#6750a4"
       },
-      "package": "com.historicaldances.app"
+      "package": "com.historicaldances.app",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro"
