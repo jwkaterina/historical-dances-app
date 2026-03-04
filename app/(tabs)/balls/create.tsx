@@ -129,49 +129,38 @@ export default function BallFormScreen() {
     return d ? (language === 'de' ? d.name_de : d.name_ru) ?? d.name : danceId
   }
 
-  // Build a flat list of section separators + dance-only items for the reorder UI.
-  // Text entries are excluded — they stay in their sections when dances are reordered.
+  // Build a flat list of section separators + all entries for the reorder UI.
   const buildFlatItems = (): SortItem[] => {
     const result: SortItem[] = []
     sections.forEach((section, sIdx) => {
       result.push({ key: `__sep__${sIdx}`, label: `${t('section')} ${sIdx + 1}`, separator: true })
-      section.entries
-        .filter(e => e.kind === 'dance')
-        .forEach(entry => {
-          result.push({ key: entry._key, label: getDanceName((entry as Extract<FormEntry, { kind: 'dance' }>).danceId) })
-        })
+      section.entries.forEach(entry => {
+        const label = entry.kind === 'dance'
+          ? getDanceName((entry as Extract<FormEntry, { kind: 'dance' }>).danceId)
+          : (language === 'de' ? entry.content_de : entry.content_ru)?.trim().slice(0, 50) || '[Text]'
+        result.push({ key: entry._key, label })
+      })
     })
     return result
   }
 
   // Reconstruct sections from a reordered flat list.
-  // Text entries are appended after the reordered dances in each section.
   const handleGlobalReorder = (sorted: SortItem[]) => {
     const newSections: FormSection[] = []
     let current: FormSection | null = null
-    let currentOrigSIdx = -1
+    const allEntries = sections.flatMap(s => s.entries)
     for (const item of sorted) {
       if (item.separator) {
-        if (current !== null) {
-          const origTexts = sections[currentOrigSIdx]?.entries.filter(e => e.kind === 'text') ?? []
-          current.entries.push(...origTexts)
-          newSections.push(current)
-        }
+        if (current !== null) newSections.push(current)
         const sIdx = parseInt(item.key.replace('__sep__', ''), 10)
-        currentOrigSIdx = sIdx
         const orig = sections[sIdx]
         current = { id: orig?.id, name_de: orig?.name_de ?? '', name_ru: orig?.name_ru ?? '', entries: [] }
       } else {
-        const allEntries = sections.flatMap(s => s.entries)
         const entry = allEntries.find(e => e._key === item.key)
         if (entry && current) current.entries.push(entry)
       }
     }
-    if (current !== null) {
-      const origTexts = sections[currentOrigSIdx]?.entries.filter(e => e.kind === 'text') ?? []
-      current.entries.push(...origTexts)
-      newSections.push(current)
-    }
+    if (current !== null) newSections.push(current)
     setSections(newSections.map(s => ({ ...s, entries: s.entries.map((e, i) => ({ ...e, order_index: i })) })))
   }
 
@@ -191,7 +180,7 @@ export default function BallFormScreen() {
   if (isEdit && loadingExisting) return <ActivityIndicator style={{ flex: 1 }} size="large" color={Colors.primary} />
 
   const isSaving = createBall.isPending || updateBall.isPending
-  const totalDances = sections.reduce((n, s) => n + s.entries.filter(e => e.kind === 'dance').length, 0)
+  const totalEntries = sections.reduce((n, s) => n + s.entries.length, 0)
 
   const inputProps = {
     mode: 'outlined' as const,
@@ -225,7 +214,7 @@ export default function BallFormScreen() {
         <Divider style={styles.divider} />
         <View style={styles.sectionsHeader}>
           <Text style={styles.fieldLabel}>{t('sections')}</Text>
-          {totalDances >= 2 && (
+          {totalEntries >= 2 && (
             globalEditOrder
               ? <Button compact mode="contained" buttonColor={Colors.primary}
                   textColor={Colors.primaryForeground} style={styles.editOrderBtn}
