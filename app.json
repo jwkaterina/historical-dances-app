@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#6750a4"
+      "backgroundColor": "#f5f1e6"
     },
     "ios": {
       "supportsTablet": true,
@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#6750a4"
+        "backgroundColor": "#f5f1e6"
       },
       "package": "com.historicaldances.app",
       "versionCode": 1,
