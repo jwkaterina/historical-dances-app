@@ -26,11 +26,7 @@
         "backgroundColor": "#f5f1e6"
       },
       "package": "com.historicaldances.app",
-      "versionCode": 2,
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      "versionCode": 3
     },
     "web": {
       "bundler": "metro"
