@@ -1,9 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { View, StyleSheet, ViewStyle, useWindowDimensions } from 'react-native'
 import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
 import { Video, ResizeMode } from 'expo-av'
-import { useFocusEffect } from 'expo-router'
+import { useIsFocused } from '@react-navigation/native'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
@@ -87,10 +87,11 @@ function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: {
 function UploadedVideoPlayer({ url, width, height, style }: { url: string; width: number; height: number; style?: ViewStyle }) {
   const [hasError, setHasError] = useState(false)
   const videoRef = useRef<Video>(null)
+  const isFocused = useIsFocused()
 
-  useFocusEffect(useCallback(() => {
-    return () => { videoRef.current?.pauseAsync() }
-  }, []))
+  useEffect(() => {
+    if (!isFocused) videoRef.current?.pauseAsync()
+  }, [isFocused])
 
   if (hasError) {
     return (
