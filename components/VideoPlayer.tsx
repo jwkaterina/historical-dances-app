@@ -111,7 +111,8 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
         useNativeControls
         isLooping={false}
         onPlaybackStatusUpdate={status => {
-          if (!status.isLoaded && status.error) setHasError(true)
+          if (!status.isLoaded) { if (status.error) setHasError(true); return }
+          if (status.didJustFinish) videoRef.current?.setPositionAsync(0)
         }}
       />
     </View>
