@@ -112,7 +112,7 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
         isLooping={false}
         onPlaybackStatusUpdate={status => {
           if (!status.isLoaded) { if (status.error) setHasError(true); return }
-          if (status.didJustFinish) videoRef.current?.setPositionAsync(0)
+          if (status.didJustFinish) videoRef.current?.setStatusAsync({ shouldPlay: false, positionMillis: 0 })
         }}
       />
     </View>
