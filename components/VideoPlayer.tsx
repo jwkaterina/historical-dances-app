@@ -102,11 +102,11 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
   }
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.videoContainer, { width, height }, style]}>
       <Video
         ref={videoRef}
         source={{ uri: url }}
-        style={{ width, height, borderRadius: 8 }}
+        style={{ width, height }}
         resizeMode={ResizeMode.CONTAIN}
         useNativeControls
         isLooping={false}
@@ -121,6 +121,14 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
+  videoContainer: {
+    marginVertical: 4,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   errorBox: {
     borderRadius: 8,
     backgroundColor: Colors.muted,
