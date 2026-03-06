@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, StyleSheet, ViewStyle, useWindowDimensions, TouchableOpacity } from 'react-native'
+import { View, StyleSheet, ViewStyle, useWindowDimensions } from 'react-native'
 import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
 import { Video, ResizeMode } from 'expo-av'
@@ -84,7 +84,6 @@ function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: {
 }
 
 function UploadedVideoPlayer({ url, width, height, style }: { url: string; width: number; height: number; style?: ViewStyle }) {
-  const [playing, setPlaying] = useState(false)
   const [hasError, setHasError] = useState(false)
 
   if (hasError) {
@@ -101,45 +100,18 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
         source={{ uri: url }}
         style={{ width, height, borderRadius: 8 }}
         resizeMode={ResizeMode.CONTAIN}
-        shouldPlay={playing}
+        useNativeControls
         isLooping={false}
         onPlaybackStatusUpdate={status => {
-          if (!status.isLoaded) {
-            if (status.error) setHasError(true)
-            return
-          }
-          if (status.didJustFinish) setPlaying(false)
+          if (!status.isLoaded && status.error) setHasError(true)
         }}
       />
-      {!playing && (
-        <TouchableOpacity style={[styles.playOverlay, { width, height, borderRadius: 8 }]} onPress={() => setPlaying(true)} activeOpacity={0.8}>
-          <View style={styles.playButton}>
-            <Icon source="play" size={36} color="#fff" />
-          </View>
-        </TouchableOpacity>
-      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
-  playOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   errorBox: {
     borderRadius: 8,
     backgroundColor: Colors.muted,
