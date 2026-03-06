@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { View, StyleSheet, ViewStyle, useWindowDimensions } from 'react-native'
+import { View, StyleSheet, ViewStyle, useWindowDimensions, TouchableOpacity } from 'react-native'
 import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
-import { useVideoPlayer, VideoView } from 'expo-video'
+import { useVideoPlayer, VideoView, useEvent } from 'expo-video'
 import { useIsFocused } from '@react-navigation/native'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
@@ -86,11 +86,20 @@ function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: {
 
 function UploadedVideoPlayer({ url, width, height, style }: { url: string; width: number; height: number; style?: ViewStyle }) {
   const isFocused = useIsFocused()
+  const [ended, setEnded] = useState(false)
   const player = useVideoPlayer({ uri: url }, p => { p.loop = false })
+
+  useEvent(player, 'playToEnd', () => setEnded(true))
 
   useEffect(() => {
     if (!isFocused) player.pause()
   }, [isFocused])
+
+  const handleReplay = () => {
+    setEnded(false)
+    player.seekBy(-player.currentTime)
+    player.play()
+  }
 
   return (
     <View style={[styles.container, style]}>
@@ -102,12 +111,39 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
         allowsFullscreen
         allowsPictureInPicture
       />
+      {ended && (
+        <TouchableOpacity
+          style={[styles.replayOverlay, { width, height, borderRadius: 8 }]}
+          onPress={handleReplay}
+          activeOpacity={0.8}
+        >
+          <View style={styles.replayButton}>
+            <Icon source="replay" size={36} color="#fff" />
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
+  replayOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  replayButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   errorBox: {
     borderRadius: 8,
     backgroundColor: Colors.muted,
