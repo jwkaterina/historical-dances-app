@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 8 },
   entryNum: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   num: { color: Colors.primaryForeground, fontFamily: Fonts.heading, fontSize: 11 },
-  danceName: { flex: 1, color: '#3d2b1f', fontFamily: Fonts.bodySemiBold, fontSize: 15 },
+  danceName: { flex: 1, color: '#3d2b1f', fontFamily: Fonts.bodySemiBold, fontSize: 15, textDecorationLine: 'underline' },
   musicRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingLeft: 34, paddingBottom: 6 },
   trackChipRow: { flexDirection: 'row', alignItems: 'center' },
   musicChip: { borderRadius: 4, backgroundColor: Colors.muted },
