@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
-import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip, List } from 'react-native-paper'
+import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip, List, IconButton } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useDance, useDeleteDance } from '@/hooks/useDances'
@@ -170,7 +170,7 @@ export default function DanceDetailScreen() {
           {musicTracks.length === 0 ? (
             <Text variant="bodyMedium" style={styles.emptyText}>{t('noMusicAssociated')}</Text>
           ) : musicTracks.map((track: MusicTrack) => (
-            <Card key={track.id} style={styles.musicCard} mode="outlined"
+            <Card key={track.id} style={[styles.musicCard, currentTrack?.id === track.id && styles.musicCardActive]} mode="elevated"
               onPress={() => play(track)}>
               <Card.Content style={styles.musicCardContent}>
                 <View style={{ flex: 1 }}>
@@ -179,7 +179,12 @@ export default function DanceDetailScreen() {
                   {track.tempo && <Text variant="bodySmall" style={styles.musicMeta}>{track.tempo} BPM</Text>}
                 </View>
                 <DownloadButton trackId={track.id} audioUrl={track.audio_url ?? null} />
-                <Text style={{ fontSize: 20 }}>{currentTrack?.id === track.id ? '⏸' : '▶'}</Text>
+                <IconButton
+                  icon={currentTrack?.id === track.id ? 'pause-circle-outline' : 'play-circle-outline'}
+                  iconColor={Colors.mutedForeground}
+                  size={28}
+                  onPress={() => play(track)}
+                />
               </Card.Content>
             </Card>
           ))}
@@ -225,7 +230,8 @@ const styles = StyleSheet.create({
   figureAccordion: { backgroundColor: Colors.card, paddingVertical: 0 },
   figureTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, fontSize: 14 },
   figureContent: { paddingHorizontal: 16, paddingBottom: 12 },
-  musicCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border },
+  musicCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border, borderWidth: 1 },
+  musicCardActive: { borderColor: Colors.primary, borderWidth: 1.5 },
   musicCardContent: { flexDirection: 'row', alignItems: 'center' },
   musicTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
   musicArtist: { color: Colors.mutedForeground },

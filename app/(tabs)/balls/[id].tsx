@@ -96,13 +96,13 @@ export default function BallDetailScreen() {
                 const musicIds = sd.music_ids ?? []
                 const tracks = musicIds.map(tid => trackById[tid]).filter(Boolean) as MusicTrack[]
                 return (
-                  <View key={idx}>
+                  <View key={idx} style={styles.danceEntry}>
                     <View style={styles.entryRow}>
                       <View style={styles.entryNum}>
                         <Text variant="bodySmall" style={styles.num}>{num}</Text>
                       </View>
                       <Text variant="bodyMedium" style={styles.danceName}
-                        onPress={() => dance && router.push(`/dances/${dance.id}`)}>
+                        onPress={() => dance && router.push({ pathname: `/(tabs)/balls/dance/${dance.id}`, params: { ballName: name } })}>
                         {danceName}
                       </Text>
                     </View>
@@ -118,11 +118,11 @@ export default function BallDetailScreen() {
                                 selected={isActive}
                                 onPress={() => play(track)}
                                 style={[styles.musicChip, isActive && styles.musicChipActive]}
-                                textStyle={{ fontSize: 11, color: isActive ? Colors.primaryForeground : Colors.mutedForeground }}
+                                textStyle={{ fontSize: 11, color: Colors.mutedForeground }}
                               >
                                 {track.title}
                               </Chip>
-                              <DownloadButton trackId={track.id} audioUrl={track.audio_url ?? null} />
+                              <DownloadButton trackId={track.id} audioUrl={track.audio_url ?? null} size={16} />
                             </View>
                           )
                         })}
@@ -186,14 +186,15 @@ const styles = StyleSheet.create({
   section: { marginBottom: 24 },
   sectionTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, marginBottom: 4 },
   divider: { marginBottom: 8, backgroundColor: Colors.border },
-  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, gap: 8 },
+  danceEntry: { marginBottom: 12 },
+  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, gap: 8 },
   entryNum: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   num: { color: Colors.primaryForeground, fontFamily: Fonts.heading, fontSize: 11 },
-  danceName: { flex: 1, color: '#3d2b1f', fontFamily: Fonts.bodySemiBold, fontSize: 15, textDecorationLine: 'underline' },
+  danceName: { flex: 1, color: Colors.foreground, fontFamily: Fonts.bodySemiBold, fontSize: 16, textDecorationLine: 'underline' },
   musicRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingLeft: 34, paddingBottom: 6 },
   trackChipRow: { flexDirection: 'row', alignItems: 'center' },
-  musicChip: { borderRadius: 4, backgroundColor: Colors.muted },
-  musicChipActive: { backgroundColor: Colors.primary },
+  musicChip: { borderRadius: 4, backgroundColor: Colors.muted, borderWidth: 1, borderColor: 'transparent' },
+  musicChipActive: { backgroundColor: Colors.muted, borderColor: Colors.primary, borderWidth: 1.5 },
   textCard: { marginVertical: 4, backgroundColor: Colors.cardSecondary, borderColor: Colors.border },
   textContent: { color: Colors.mutedForeground },
   actions: { flexDirection: 'row', gap: 12, marginTop: 24, justifyContent: 'center' },

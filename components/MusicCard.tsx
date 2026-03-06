@@ -44,8 +44,8 @@ export default function MusicCard({ track, isPlaying, language, onPress }: Props
         </View>
         <DownloadButton trackId={track.id} audioUrl={track.audio_url} />
         <IconButton
-          icon={isPlaying ? 'pause-circle' : 'play-circle'}
-          iconColor={isPlaying ? Colors.primary : Colors.accent}
+          icon={isPlaying ? 'pause-circle-outline' : 'play-circle-outline'}
+          iconColor={Colors.mutedForeground}
           size={36}
           onPress={onPress}
         />
@@ -56,10 +56,10 @@ export default function MusicCard({ track, isPlaying, language, onPress }: Props
 
 const styles = StyleSheet.create({
   card: { marginBottom: 8, marginHorizontal: 12, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
-  playing: { borderColor: Colors.primary, borderWidth: 2 },
+  playing: { borderColor: Colors.primary, borderWidth: 1.5 },
   content: { flexDirection: 'row', alignItems: 'center', paddingRight: 0 },
   info: { flex: 1 },
-  title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
+  title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, fontSize: 16 },
   trackName: { color: Colors.mutedForeground, marginTop: 1 },
   meta: { flexDirection: 'row', gap: 8, marginTop: 2 },
   metaText: { color: Colors.mutedForeground },

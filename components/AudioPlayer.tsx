@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { Text, IconButton, ProgressBar } from 'react-native-paper'
+import { Text, IconButton } from 'react-native-paper'
 import { Audio } from 'expo-av'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
@@ -68,33 +68,35 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.row}>
+      <View style={styles.headerRow}>
         <View style={styles.info}>
           <Text variant="bodyMedium" style={styles.title} numberOfLines={1}>{title}</Text>
           {artist && <Text variant="bodySmall" style={styles.artist}>{artist}</Text>}
         </View>
-        <View style={styles.buttons}>
-          <IconButton icon={isPlaying ? 'pause' : 'play'} size={28} onPress={togglePlay} iconColor={Colors.primary} />
-          {onClose && <IconButton icon="close" size={20} onPress={onClose} iconColor={Colors.mutedForeground} />}
-        </View>
+        {onClose && <IconButton icon="close" size={18} onPress={onClose} iconColor={Colors.mutedForeground} style={styles.closeBtn} />}
       </View>
       <View style={styles.progressRow}>
         <Text variant="bodySmall" style={styles.time}>{formatTime(position)}</Text>
-        <ProgressBar progress={progress} style={styles.progress} color={Colors.primary} />
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+        </View>
         <Text variant="bodySmall" style={styles.time}>{formatTime(duration)}</Text>
+        <IconButton icon={isPlaying ? 'pause' : 'play'} size={28} onPress={togglePlay} iconColor={Colors.primary} style={styles.playBtn} />
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 12, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border },
-  row: { flexDirection: 'row', alignItems: 'center' },
+  container: { padding: 12, backgroundColor: Colors.secondary, borderTopWidth: 2, borderTopColor: Colors.primary },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 },
   info: { flex: 1 },
   title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
   artist: { color: Colors.mutedForeground },
-  buttons: { flexDirection: 'row' },
+  closeBtn: { margin: 0, marginLeft: 4 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  progress: { flex: 1, height: 3, borderRadius: 2, backgroundColor: Colors.border },
+  playBtn: { margin: 0, marginLeft: 4 },
+  progressTrack: { flex: 1, height: 5, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.15)', overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: Colors.primary },
   time: { color: Colors.mutedForeground, minWidth: 36, fontSize: 11 },
 })

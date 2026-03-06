@@ -4,33 +4,37 @@ import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import { useTrackDownload } from '@/hooks/useTrackDownload'
 
-const DOWNLOADED_COLOR = '#5a8a62'
+const DOWNLOADED_COLOR = Colors.primaryLight
 
 type Props = {
   trackId: string
   audioUrl: string | null
+  size?: number
 }
 
-export default function DownloadButton({ trackId, audioUrl }: Props) {
+export default function DownloadButton({ trackId, audioUrl, size = 22 }: Props) {
   const { state, progress, download, remove } = useTrackDownload(trackId, audioUrl)
 
   if (!audioUrl) return null
 
-  if (state === 'downloading') {
-    return (
-      <View style={styles.progressCircle}>
-        <Text style={styles.progressText}>{progress}%</Text>
-      </View>
-    )
-  }
+  const outerSize = size + 18
 
   return (
-    <IconButton
-      icon={state === 'downloaded' ? 'check-circle' : 'cloud-download-outline'}
-      iconColor={state === 'downloaded' ? DOWNLOADED_COLOR : Colors.mutedForeground}
-      size={22}
-      onPress={state === 'downloaded' ? remove : download}
-    />
+    <View style={{ width: outerSize, height: outerSize, alignItems: 'center', justifyContent: 'center' }}>
+      {state === 'downloading' ? (
+        <View style={[styles.progressCircle, { width: size + 14, height: size + 14, borderRadius: (size + 14) / 2 }]}>
+          <Text style={[styles.progressText, { fontSize: size * 0.45 }]}>{progress}%</Text>
+        </View>
+      ) : (
+        <IconButton
+          icon={state === 'downloaded' ? 'check-circle' : 'cloud-download-outline'}
+          iconColor={DOWNLOADED_COLOR}
+          size={size}
+          style={{ margin: 0 }}
+          onPress={state === 'downloaded' ? remove : download}
+        />
+      )}
+    </View>
   )
 }
 
