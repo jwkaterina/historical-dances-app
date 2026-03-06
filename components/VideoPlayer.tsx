@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { View, StyleSheet, ViewStyle, useWindowDimensions, TouchableOpacity } from 'react-native'
 import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
-import { useVideoPlayer, VideoView, useEvent } from 'expo-video'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { useIsFocused } from '@react-navigation/native'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
@@ -89,7 +89,10 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
   const [ended, setEnded] = useState(false)
   const player = useVideoPlayer({ uri: url }, p => { p.loop = false })
 
-  useEvent(player, 'playToEnd', () => setEnded(true))
+  useEffect(() => {
+    const sub = player.addListener('playToEnd', () => setEnded(true))
+    return () => sub.remove()
+  }, [player])
 
   useEffect(() => {
     if (!isFocused) player.pause()
