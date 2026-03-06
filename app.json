@@ -47,7 +47,14 @@
       ],
       "expo-asset",
       "expo-font",
-      "expo-video"
+      "expo-video",
+      [
+        "react-native-google-cast",
+        {
+          "receiverAppId": "CC1AD845",
+          "androidReceiverAppId": "CC1AD845"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -4,6 +4,7 @@ import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { useIsFocused } from '@react-navigation/native'
+import { CastButton } from 'react-native-google-cast'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
@@ -114,6 +115,9 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
         allowsFullscreen
         allowsPictureInPicture
       />
+      <View style={styles.castRow}>
+        <CastButton style={styles.castButton} />
+      </View>
       {ended && (
         <TouchableOpacity
           style={[styles.replayOverlay, { width, height, borderRadius: 8 }]}
@@ -131,6 +135,16 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
+  castRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: 4,
+  },
+  castButton: {
+    width: 24,
+    height: 24,
+    tintColor: Colors.mutedForeground,
+  },
   replayOverlay: {
     position: 'absolute',
     top: 0,
