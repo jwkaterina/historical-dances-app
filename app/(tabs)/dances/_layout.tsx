@@ -1,22 +1,25 @@
 import { Text } from 'react-native'
-import { Stack, useNavigation, useFocusEffect } from 'expo-router'
+import { Stack, useNavigation } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import { StackActions } from '@react-navigation/native'
-import { useCallback } from 'react'
+import { useEffect } from 'react'
 
 export default function DancesLayout() {
   const { t } = useLanguage()
   const navigation = useNavigation()
 
-  useFocusEffect(useCallback(() => {
-    const state = navigation.getState()
-    const tabRoute = state?.routes?.find((r: any) => r.name === 'dances')
-    if (tabRoute?.state?.key && (tabRoute.state as any).index > 0) {
-      navigation.dispatch({ ...StackActions.popToTop(), target: tabRoute.state.key })
-    }
-  }, [navigation]))
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress' as any, () => {
+      const state = navigation.getState()
+      const tabRoute = state?.routes?.find((r: any) => r.name === 'dances')
+      if (tabRoute?.state?.key && (tabRoute.state as any).index > 0) {
+        navigation.dispatch({ ...StackActions.popToTop(), target: tabRoute.state.key })
+      }
+    })
+    return unsubscribe
+  }, [navigation])
 
   return (
     <Stack
