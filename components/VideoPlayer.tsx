@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { View, StyleSheet, ViewStyle, useWindowDimensions } from 'react-native'
 import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
-import { Video, ResizeMode } from 'expo-av'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { useIsFocused } from '@react-navigation/native'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
@@ -85,35 +85,22 @@ function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: {
 }
 
 function UploadedVideoPlayer({ url, width, height, style }: { url: string; width: number; height: number; style?: ViewStyle }) {
-  const [hasError, setHasError] = useState(false)
-  const videoRef = useRef<Video>(null)
   const isFocused = useIsFocused()
+  const player = useVideoPlayer({ uri: url }, p => { p.loop = false })
 
   useEffect(() => {
-    if (!isFocused) videoRef.current?.pauseAsync()
+    if (!isFocused) player.pause()
   }, [isFocused])
-
-  if (hasError) {
-    return (
-      <View style={[styles.container, style]}>
-        <VideoErrorPlaceholder width={width} height={height} />
-      </View>
-    )
-  }
 
   return (
     <View style={[styles.container, style]}>
-      <Video
-        ref={videoRef}
-        source={{ uri: url }}
+      <VideoView
+        player={player}
         style={{ width, height, borderRadius: 8 }}
-        resizeMode={ResizeMode.CONTAIN}
-        useNativeControls
-        isLooping={false}
-        onPlaybackStatusUpdate={status => {
-          if (!status.isLoaded) { if (status.error) setHasError(true); return }
-          if (status.didJustFinish) videoRef.current?.setStatusAsync({ shouldPlay: false, positionMillis: 0 })
-        }}
+        contentFit="contain"
+        nativeControls
+        allowsFullscreen
+        allowsPictureInPicture
       />
     </View>
   )
