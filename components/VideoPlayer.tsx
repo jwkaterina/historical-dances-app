@@ -118,7 +118,7 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
       {Constants.executionEnvironment !== 'storeClient' && (() => {
         const { CastButton } = require('react-native-google-cast')
         return (
-          <View style={styles.castRow}>
+          <View style={styles.castOverlay}>
             <CastButton style={styles.castButton} />
           </View>
         )
@@ -140,15 +140,15 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
 
 const styles = StyleSheet.create({
   container: { marginVertical: 4 },
-  castRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingTop: 4,
+  castOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
   },
   castButton: {
     width: 24,
     height: 24,
-    tintColor: Colors.mutedForeground,
+    tintColor: '#fff',
   },
   replayOverlay: {
     position: 'absolute',

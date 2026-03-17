@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, GestureResponderEvent } from 'react-native'
 import { Text, IconButton } from 'react-native-paper'
 import { Audio } from 'expo-av'
 import { Colors } from '@/lib/colors'
@@ -65,6 +65,15 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
   }
 
   const progress = duration > 0 ? position / duration : 0
+  const trackWidthRef = useRef(0)
+
+  const handleSeek = async (event: GestureResponderEvent) => {
+    if (!soundRef.current || !trackWidthRef.current) return
+    const ratio = Math.max(0, Math.min(1, event.nativeEvent.locationX / trackWidthRef.current))
+    const newPosition = ratio * duration
+    setPosition(newPosition)
+    await soundRef.current.setPositionAsync(newPosition)
+  }
 
   return (
     <View style={styles.container}>
@@ -77,7 +86,13 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
       </View>
       <View style={styles.progressRow}>
         <Text variant="bodySmall" style={styles.time}>{formatTime(position)}</Text>
-        <View style={styles.progressTrack}>
+        <View
+          style={styles.progressTrack}
+          onLayout={e => { trackWidthRef.current = e.nativeEvent.layout.width }}
+          onStartShouldSetResponder={() => true}
+          onResponderGrant={handleSeek}
+          onResponderMove={handleSeek}
+        >
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
         </View>
         <Text variant="bodySmall" style={styles.time}>{formatTime(duration)}</Text>
