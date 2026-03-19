@@ -27,7 +27,7 @@ export default function SignupScreen() {
       options: { emailRedirectTo: 'https://historical-dances.group/auth/confirm' },
     })
     setLoading(false)
-    if (authError) setError(t('authError'))
+    if (authError) setError(authError.message)
     else setSuccess(true)
   }
 

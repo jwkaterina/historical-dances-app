@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text, List, Divider, Button, Avatar, ActivityIndicator, Switch, Snackbar } from 'react-native-paper'
 import { useRouter } from 'expo-router'
@@ -10,6 +10,8 @@ import { isTrackDownloaded, downloadTrackFile, deleteAllTrackFiles } from '@/hoo
 import { getWifiOnlySetting, setWifiOnlySetting, canDownloadNow } from '@/lib/downloadPrefs'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
+import { getAdminAccessUnlocked } from '@/lib/adminAccess'
+import { useFocusEffect } from 'expo-router'
 
 export default function SettingsScreen() {
   const { t, language, setLanguage } = useLanguage()
@@ -17,10 +19,15 @@ export default function SettingsScreen() {
   const router = useRouter()
   const { data: allTracks = [] } = useMusic()
 
+  const [adminUnlocked, setAdminUnlocked] = useState(false)
   const [dlState, setDlState] = useState<'idle' | 'downloading' | 'done'>('idle')
   const [dlProgress, setDlProgress] = useState({ done: 0, total: 0 })
   const [wifiOnly, setWifiOnly] = useState(true)
   const [snackbar, setSnackbar] = useState('')
+
+  useFocusEffect(useCallback(() => {
+    getAdminAccessUnlocked().then(setAdminUnlocked)
+  }, []))
 
   useEffect(() => {
     getWifiOnlySetting().then(setWifiOnly)
@@ -176,29 +183,31 @@ export default function SettingsScreen() {
 
       <Divider style={styles.divider} />
 
-      <View style={styles.logoutSection}>
-        {user ? (
-          <Button
-            mode="outlined"
-            icon="logout"
-            onPress={async () => { await signOut(); toastService.show('toastLoggedOut') }}
-            textColor={Colors.destructive}
-            style={styles.logoutBtn}
-          >
-            {t('logout')}
-          </Button>
-        ) : (
-          <Button
-            mode="outlined"
-            icon="login"
-            onPress={() => router.push('/(auth)/login')}
-            textColor={Colors.primary}
-            style={styles.loginBtn}
-          >
-            {t('login')}
-          </Button>
-        )}
-      </View>
+      {(user || adminUnlocked) && (
+        <View style={styles.logoutSection}>
+          {user ? (
+            <Button
+              mode="outlined"
+              icon="logout"
+              onPress={async () => { await signOut(); toastService.show('toastLoggedOut') }}
+              textColor={Colors.destructive}
+              style={styles.logoutBtn}
+            >
+              {t('logout')}
+            </Button>
+          ) : (
+            <Button
+              mode="outlined"
+              icon="login"
+              onPress={() => router.push('/(auth)/login')}
+              textColor={Colors.primary}
+              style={styles.loginBtn}
+            >
+              {t('login')}
+            </Button>
+          )}
+        </View>
+      )}
 
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={4000}>
         {snackbar}
