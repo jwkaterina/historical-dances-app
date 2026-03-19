@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { getLocales } from 'expo-localization'
 import { Language, TranslationKey, translations } from '@/lib/translations'
 
 const LANGUAGE_KEY = 'app_language'
@@ -23,6 +24,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem(LANGUAGE_KEY).then((stored) => {
       if (stored === 'de' || stored === 'ru') {
         setLanguageState(stored)
+      } else {
+        const deviceLang = getLocales()[0]?.languageCode
+        setLanguageState(deviceLang === 'ru' ? 'ru' : 'de')
       }
     })
   }, [])

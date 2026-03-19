@@ -54,7 +54,8 @@
           "receiverAppId": "CC1AD845",
           "androidReceiverAppId": "CC1AD845"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
