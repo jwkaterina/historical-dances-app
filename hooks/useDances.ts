@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchDances, fetchDanceById, createDance, updateDance, deleteDance, syncDanceVideos, syncDanceMusicLinks, syncDanceFigures, fetchDanceTutorials, syncDanceTutorials } from '@/lib/api/dances'
+import { MUSIC_KEY } from '@/hooks/useMusic'
 import type { Dance } from '@/types/database'
 
 export const DANCES_KEY = 'dances'
@@ -60,7 +61,10 @@ export function useSyncDanceMusicLinks() {
   return useMutation({
     mutationFn: ({ danceId, musicIds }: { danceId: string; musicIds: string[] }) =>
       syncDanceMusicLinks(danceId, musicIds),
-    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: [DANCES_KEY, vars.danceId] }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [DANCES_KEY, vars.danceId] })
+      qc.invalidateQueries({ queryKey: [MUSIC_KEY] })
+    },
   })
 }
 

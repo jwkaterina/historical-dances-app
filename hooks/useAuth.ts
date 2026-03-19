@@ -9,20 +9,26 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (mounted) {
-        setUser(user)
-        setLoading(false)
-      }
-    }).catch(() => {
-      if (mounted) setLoading(false)
-    })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) {
-        setUser(session?.user ?? null)
+      if (!mounted) return
+      if (!session?.user) {
+        setUser(null)
         setLoading(false)
+        return
       }
+      // Fetch fresh user from server to get latest user_metadata (e.g. is_admin)
+      // session.user comes from the JWT and may be stale if metadata was updated after login
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (mounted) {
+          setUser(user)
+          setLoading(false)
+        }
+      }).catch(() => {
+        if (mounted) {
+          setUser(session.user)
+          setLoading(false)
+        }
+      })
     })
 
     return () => {
@@ -33,7 +39,7 @@ export function useAuth() {
 
   const signOut = () => supabase.auth.signOut()
 
-  const isAdmin = user?.app_metadata?.role === 'admin'
+  const isAdmin = !!user?.user_metadata?.is_admin
 
   return { user, loading, isAuthenticated: !!user, isAdmin, signOut }
 }

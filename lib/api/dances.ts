@@ -203,6 +203,17 @@ export async function syncDanceMusicLinks(danceId: string, musicIds: string[]) {
 
   if (toDelete.length > 0) {
     await supabase.from('dance_music').delete().eq('dance_id', danceId).in('music_id', toDelete)
+
+    // Delete music tracks that are no longer linked to any dance
+    const { data: remainingLinks } = await supabase
+      .from('dance_music')
+      .select('music_id')
+      .in('music_id', toDelete)
+    const stillUsed = new Set((remainingLinks || []).map((r: any) => r.music_id))
+    const orphans = toDelete.filter(id => !stillUsed.has(id))
+    if (orphans.length > 0) {
+      await supabase.from('music').delete().in('id', orphans)
+    }
   }
   for (const mid of toAdd) {
     await supabase.from('dance_music').insert({ dance_id: danceId, music_id: mid })
