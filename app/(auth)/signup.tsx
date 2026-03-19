@@ -21,7 +21,11 @@ export default function SignupScreen() {
     if (password !== repeat) { setError(t('passwordsNoMatch')); return }
     setLoading(true)
     setError('')
-    const { error: authError } = await supabase.auth.signUp({ email, password })
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: 'https://historical-dances.group/auth/confirm' },
+    })
     setLoading(false)
     if (authError) setError(t('authError'))
     else setSuccess(true)

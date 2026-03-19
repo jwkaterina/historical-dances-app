@@ -28,6 +28,8 @@ import {
   Lora_700Bold,
 } from '@expo-google-fonts/lora'
 import * as SplashScreen from 'expo-splash-screen'
+import * as Linking from 'expo-linking'
+import { supabase } from '@/lib/supabase'
 
 SplashScreen.preventAutoHideAsync()
 LogBox.ignoreLogs(['Network request failed', 'TypeError: Network request failed'])
@@ -105,6 +107,24 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync()
   }, [fontsLoaded])
+
+  useEffect(() => {
+    const handleDeepLink = async (url: string) => {
+      const fragment = url.split('#')[1]
+      if (!fragment) return
+      const params = new URLSearchParams(fragment)
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      if (accessToken && refreshToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+      }
+    }
+
+    const sub = Linking.addEventListener('url', ({ url }) => handleDeepLink(url))
+    Linking.getInitialURL().then(url => { if (url) handleDeepLink(url) })
+
+    return () => sub.remove()
+  }, [])
 
   if (!fontsLoaded) {
     return <View style={{ flex: 1, backgroundColor: Colors.background }} />
