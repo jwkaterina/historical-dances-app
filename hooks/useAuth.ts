@@ -7,13 +7,9 @@ export function useAuth() {
   const [role, setRole] = useState<string>('user')
   const [loading, setLoading] = useState(true)
 
-  const fetchRole = async (userId: string): Promise<string> => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single()
-    return data?.role ?? 'user'
+  const fetchRole = async (): Promise<string> => {
+    const { data } = await supabase.rpc('get_my_role')
+    return (data as string) ?? 'user'
   }
 
   useEffect(() => {
@@ -31,7 +27,7 @@ export function useAuth() {
         if (!mounted) return
         setUser(user)
         if (user) {
-          const r = await fetchRole(user.id)
+          const r = await fetchRole()
           if (mounted) setRole(r)
         }
         setLoading(false)
