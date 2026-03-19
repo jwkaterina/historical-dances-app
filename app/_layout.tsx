@@ -83,7 +83,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleAdminLink = async (url: string) => {
       const parsed = Linking.parse(url)
-      if (parsed.hostname === 'admin-login') {
+      if (parsed.hostname === 'historical-dances.group' && parsed.path === '/admin-login') {
         await setAdminAccessUnlocked()
         setPendingAdminLogin(true)
       }
