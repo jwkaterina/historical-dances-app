@@ -3,6 +3,7 @@ import { StyleSheet, View, KeyboardAvoidingView, Platform, ScrollView } from 're
 import { Text, TextInput, Button, Divider, Card, IconButton, Snackbar, ActivityIndicator, Chip } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/hooks/useAuth'
 import { useCreateBall, useUpdateBall, useBall, useDancesForBall } from '@/hooks/useBalls'
 import { Colors } from '@/lib/colors'
 import { isNetworkError } from '@/lib/toastService'
@@ -25,9 +26,15 @@ type FormSection = {
 export default function BallFormScreen() {
   const { edit } = useLocalSearchParams<{ edit?: string }>()
   const { t, language } = useLanguage()
+  const { isAdmin, loading: authLoading } = useAuth()
   const router = useRouter()
   const isEdit = !!edit
   const keyRef = useRef(0)
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) router.replace('/(tabs)')
+  }, [isAdmin, authLoading])
+
   const genKey = () => `k${++keyRef.current}`
 
   const { data: existing, isLoading: loadingExisting } = useBall(edit ?? '')
@@ -190,6 +197,8 @@ export default function BallFormScreen() {
     textColor: Colors.foreground,
     style: styles.input,
   }
+
+  if (authLoading || !isAdmin) return null
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

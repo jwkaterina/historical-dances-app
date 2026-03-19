@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { Text, TextInput, Button, IconButton, Divider, ActivityIndicator, Snackbar } from 'react-native-paper'
-import { Stack } from 'expo-router'
+import { Stack, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/hooks/useAuth'
 import {
   useTutorialCategories,
   useCreateCategory, useUpdateCategory, useDeleteCategory,
@@ -15,7 +16,13 @@ import type { TutorialCategory } from '@/types/database'
 
 export default function CategoriesScreen() {
   const { t, language } = useLanguage()
+  const { isAdmin, loading: authLoading } = useAuth()
+  const router = useRouter()
   const { data: categories = [], isLoading } = useTutorialCategories()
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) router.replace('/(tabs)')
+  }, [isAdmin, authLoading])
   const createCategory = useCreateCategory()
   const updateCategory = useUpdateCategory()
   const deleteCategory = useDeleteCategory()
@@ -73,6 +80,8 @@ export default function CategoriesScreen() {
       if (!isNetworkError(e)) setSnackbar(t('toastFailedDeleteCategory'))
     }
   }
+
+  if (authLoading || !isAdmin) return null
 
   return (
     <>

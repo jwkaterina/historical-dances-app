@@ -13,7 +13,7 @@ const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'] as const
 
 export default function DancesScreen() {
   const { t, language } = useLanguage()
-  const { isAuthenticated } = useAuth()
+  const { isAdmin } = useAuth()
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [diffFilter, setDiffFilter] = useState<string | null>(null)
@@ -88,7 +88,7 @@ export default function DancesScreen() {
         />
       )}
 
-      {isAuthenticated && (
+      {isAdmin && (
         <FAB icon="plus" style={styles.fab} onPress={() => router.push('/dances/create')} color={Colors.primaryForeground} />
       )}
     </View>

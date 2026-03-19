@@ -27,7 +27,7 @@ function buildEntries(section: BallSection): SectionEntry[] {
 export default function BallDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { t, language } = useLanguage()
-  const { isAuthenticated } = useAuth()
+  const { isAdmin } = useAuth()
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
   const { currentTrack, play } = useAudioPlayer()
@@ -146,7 +146,7 @@ export default function BallDetailScreen() {
         )
       })}
 
-      {isAuthenticated && (
+      {isAdmin && (
         <View style={styles.actions}>
           <Button mode="outlined" icon="pencil"
             onPress={() => router.push(`/(tabs)/balls/create?edit=${ball.id}`)}

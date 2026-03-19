@@ -17,7 +17,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 export default function TutorialDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { t, language } = useLanguage()
-  const { isAuthenticated } = useAuth()
+  const { isAdmin } = useAuth()
   const router = useRouter()
   const [imageModalVisible, setImageModalVisible] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
@@ -109,7 +109,7 @@ export default function TutorialDetailScreen() {
             </TouchableOpacity>
           </View>
         )}
-        {isAuthenticated && (
+        {isAdmin && (
           <View style={styles.actions}>
             <Button mode="outlined" icon="pencil" onPress={() => router.push(`/(tabs)/tutorials/edit/${tutorial.id}`)}
               style={styles.actionBtn} textColor={Colors.primary}>{t('edit')}</Button>

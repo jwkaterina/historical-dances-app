@@ -33,5 +33,7 @@ export function useAuth() {
 
   const signOut = () => supabase.auth.signOut()
 
-  return { user, loading, isAuthenticated: !!user, signOut }
+  const isAdmin = user?.app_metadata?.role === 'admin'
+
+  return { user, loading, isAuthenticated: !!user, isAdmin, signOut }
 }

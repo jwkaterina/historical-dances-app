@@ -11,7 +11,7 @@ import type { BallWithSections } from '@/types/database'
 
 export default function BallsScreen() {
   const { t, language } = useLanguage()
-  const { isAuthenticated } = useAuth()
+  const { isAdmin } = useAuth()
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [yearFilter, setYearFilter] = useState<string | null>(null)
@@ -130,7 +130,7 @@ export default function BallsScreen() {
         />
       )}
 
-      {isAuthenticated && (
+      {isAdmin && (
         <FAB icon="plus" style={styles.fab} onPress={() => router.push('/(tabs)/balls/create')} color={Colors.primaryForeground} />
       )}
     </View>

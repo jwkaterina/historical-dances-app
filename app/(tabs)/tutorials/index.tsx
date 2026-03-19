@@ -17,7 +17,7 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function TutorialsScreen() {
   const { t, language } = useLanguage()
-  const { isAuthenticated } = useAuth()
+  const { isAdmin } = useAuth()
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
@@ -114,7 +114,7 @@ export default function TutorialsScreen() {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />}
         />
       )}
-      {isAuthenticated && (
+      {isAdmin && (
         <>
           <FAB icon="plus" style={styles.fab} onPress={() => router.push('/(tabs)/tutorials/create')} color={Colors.primaryForeground} />
           <Button icon="tag-multiple" mode="text" textColor={Colors.primary} style={styles.catBtn}

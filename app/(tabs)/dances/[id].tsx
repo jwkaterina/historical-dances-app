@@ -17,7 +17,7 @@ import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/data
 export default function DanceDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { t, language } = useLanguage()
-  const { isAuthenticated } = useAuth()
+  const { isAdmin } = useAuth()
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
   const [snackbar, setSnackbar] = useState('')
@@ -190,7 +190,7 @@ export default function DanceDetailScreen() {
           ))}
         </View>
 
-        {isAuthenticated && (
+        {isAdmin && (
           <View style={styles.actions}>
             <Button mode="outlined" icon="pencil" onPress={() => router.push(`/dances/edit/${dance.id}`)}
               style={styles.actionBtn} textColor={Colors.primary}>
