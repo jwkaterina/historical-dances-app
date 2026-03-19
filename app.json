@@ -29,20 +29,6 @@
       "versionCode": 8,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
-      ],
-      "intentFilters": [
-        {
-          "action": "VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "https",
-              "host": "historical-dances.group",
-              "pathPrefix": "/admin-login"
-            }
-          ],
-          "category": ["BROWSABLE", "DEFAULT"]
-        }
       ]
     },
     "web": {

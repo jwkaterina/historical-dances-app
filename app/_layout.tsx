@@ -30,7 +30,6 @@ import {
 import * as SplashScreen from 'expo-splash-screen'
 import * as Linking from 'expo-linking'
 import { supabase } from '@/lib/supabase'
-import { setAdminAccessUnlocked } from '@/lib/adminAccess'
 
 SplashScreen.preventAutoHideAsync()
 LogBox.ignoreLogs(['Network request failed', 'TypeError: Network request failed'])
@@ -78,34 +77,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
   const router = useRouter()
   const segments = useSegments()
-  const [pendingAdminLogin, setPendingAdminLogin] = useState(false)
-
-  useEffect(() => {
-    const handleAdminLink = async (url: string) => {
-      const parsed = Linking.parse(url)
-      if (parsed.hostname === 'historical-dances.group' && parsed.path === '/admin-login') {
-        await setAdminAccessUnlocked()
-        setPendingAdminLogin(true)
-      }
-    }
-    const sub = Linking.addEventListener('url', ({ url }) => handleAdminLink(url))
-    Linking.getInitialURL().then(url => { if (url) handleAdminLink(url) })
-    return () => sub.remove()
-  }, [])
-
   useEffect(() => {
     if (loading) return
     const inAuthGroup = segments[0] === '(auth)'
     // Redirect logged-in users away from auth screens; unauthenticated users can browse freely
     if (user && inAuthGroup) {
       router.replace('/(tabs)')
-      return
     }
-    if (pendingAdminLogin && !user && !inAuthGroup) {
-      router.push('/(auth)/login')
-      setPendingAdminLogin(false)
-    }
-  }, [user, loading, segments, pendingAdminLogin])
+  }, [user, loading, segments])
 
   return <>{children}</>
 }

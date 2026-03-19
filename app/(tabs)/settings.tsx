@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, Pressable } from 'react-native'
 import { Text, List, Divider, Button, Avatar, ActivityIndicator, Switch, Snackbar } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -10,7 +10,7 @@ import { isTrackDownloaded, downloadTrackFile, deleteAllTrackFiles } from '@/hoo
 import { getWifiOnlySetting, setWifiOnlySetting, canDownloadNow } from '@/lib/downloadPrefs'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
-import { getAdminAccessUnlocked } from '@/lib/adminAccess'
+import { getAdminAccessUnlocked, setAdminAccessUnlocked } from '@/lib/adminAccess'
 import { useFocusEffect } from 'expo-router'
 
 export default function SettingsScreen() {
@@ -20,6 +20,7 @@ export default function SettingsScreen() {
   const { data: allTracks = [] } = useMusic()
 
   const [adminUnlocked, setAdminUnlocked] = useState(false)
+  const [avatarTaps, setAvatarTaps] = useState(0)
   const [dlState, setDlState] = useState<'idle' | 'downloading' | 'done'>('idle')
   const [dlProgress, setDlProgress] = useState({ done: 0, total: 0 })
   const [wifiOnly, setWifiOnly] = useState(true)
@@ -79,12 +80,26 @@ export default function SettingsScreen() {
     setDlProgress({ done: 0, total: 0 })
   }
 
+  const handleAvatarTap = async () => {
+    if (adminUnlocked) return
+    const next = avatarTaps + 1
+    setAvatarTaps(next)
+    if (next >= 7) {
+      await setAdminAccessUnlocked()
+      setAdminUnlocked(true)
+      setAvatarTaps(0)
+      setSnackbar('✓')
+    }
+  }
+
   const tracksWithAudio = allTracks.filter(tr => !!tr.audio_url)
 
   return (
     <View style={styles.container}>
       <View style={styles.profileSection}>
-        <Avatar.Icon size={64} icon="account" style={styles.avatar} color={Colors.primaryForeground} />
+        <Pressable onPress={handleAvatarTap}>
+          <Avatar.Icon size={64} icon="account" style={styles.avatar} color={Colors.primaryForeground} />
+        </Pressable>
         <Text variant="titleMedium" style={styles.email}>{user?.email}</Text>
       </View>
 
