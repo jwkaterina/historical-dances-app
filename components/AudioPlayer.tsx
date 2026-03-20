@@ -18,6 +18,8 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
+  const isSeeking = useRef(false)
+  const pendingSeekPos = useRef(0)  // stores seek target set during drag/tap
 
   useEffect(() => {
     let sound: Audio.Sound | null = null
@@ -34,7 +36,7 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
           { shouldPlay: true },
           (status) => {
             if (status.isLoaded) {
-              setPosition(status.positionMillis)
+              if (!isSeeking.current) setPosition(status.positionMillis)
               setDuration(status.durationMillis ?? 0)
               setIsPlaying(status.isPlaying)
               if (status.didJustFinish) setIsPlaying(false)
@@ -67,13 +69,36 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
   const progress = duration > 0 ? position / duration : 0
   const trackWidthRef = useRef(0)
   const [trackWidth, setTrackWidth] = useState(0)
+  const containerRef = useRef<View>(null)
+  const containerPageXRef = useRef(0)
 
-  const handleSeek = async (event: GestureResponderEvent) => {
-    if (!soundRef.current || !trackWidthRef.current) return
-    const ratio = Math.max(0, Math.min(1, event.nativeEvent.locationX / trackWidthRef.current))
-    const newPosition = ratio * duration
-    setPosition(newPosition)
-    await soundRef.current.setPositionAsync(newPosition)
+  const calcPosition = (event: GestureResponderEvent) => {
+    const relX = event.nativeEvent.pageX - containerPageXRef.current
+    const ratio = Math.max(0, Math.min(1, relX / trackWidthRef.current))
+    return ratio * duration
+  }
+
+  const handleSeekStart = (event: GestureResponderEvent) => {
+    if (!trackWidthRef.current || !duration) return
+    isSeeking.current = true
+    const pos = calcPosition(event)
+    pendingSeekPos.current = pos
+    setPosition(pos)
+  }
+
+  const handleSeekMove = (event: GestureResponderEvent) => {
+    if (!trackWidthRef.current || !duration) return
+    const pos = calcPosition(event)
+    pendingSeekPos.current = pos
+    setPosition(pos)
+  }
+
+  const handleSeekEnd = async () => {
+    if (!soundRef.current) return
+    const pos = pendingSeekPos.current
+    await soundRef.current.setPositionAsync(pos)
+    // keep isSeeking true briefly so status callback doesn't overwrite with stale value
+    setTimeout(() => { isSeeking.current = false }, 300)
   }
 
   return (
@@ -88,21 +113,30 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
       <View style={styles.progressRow}>
         <Text variant="bodySmall" style={styles.time}>{formatTime(position)}</Text>
         <View
+          ref={containerRef}
           style={styles.progressContainer}
           onLayout={e => {
             const w = e.nativeEvent.layout.width
             trackWidthRef.current = w
             setTrackWidth(w)
+            containerRef.current?.measure((_x, _y, _w, _h, pageX) => {
+              containerPageXRef.current = pageX
+            })
           }}
           onStartShouldSetResponder={() => true}
-          onResponderGrant={handleSeek}
-          onResponderMove={handleSeek}
+          onMoveShouldSetResponder={() => true}
+          onStartShouldSetResponderCapture={() => true}
+          onMoveShouldSetResponderCapture={() => true}
+          onResponderGrant={handleSeekStart}
+          onResponderMove={handleSeekMove}
+          onResponderRelease={handleSeekEnd}
+          onResponderTerminationRequest={() => false}
         >
-          <View style={styles.progressTrack}>
+          <View style={styles.progressTrack} pointerEvents="none">
             <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
           {trackWidth > 0 && (
-            <View style={[styles.progressThumb, { left: progress * trackWidth - 9 }]} />
+            <View style={[styles.progressThumb, { left: progress * trackWidth - 9 }]} pointerEvents="none" />
           )}
         </View>
         <Text variant="bodySmall" style={styles.time}>{formatTime(duration)}</Text>
