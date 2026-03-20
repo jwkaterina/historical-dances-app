@@ -102,7 +102,7 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
             <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
           {trackWidth > 0 && (
-            <View style={[styles.progressThumb, { left: progress * trackWidth - 7 }]} />
+            <View style={[styles.progressThumb, { left: progress * trackWidth - 9 }]} />
           )}
         </View>
         <Text variant="bodySmall" style={styles.time}>{formatTime(duration)}</Text>
@@ -121,9 +121,9 @@ const styles = StyleSheet.create({
   closeBtn: { margin: 0, marginLeft: 4 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   playBtn: { margin: 0, marginLeft: 4 },
-  progressContainer: { flex: 1, height: 28, justifyContent: 'center' },
-  progressTrack: { height: 8, borderRadius: 4, backgroundColor: 'rgba(0,0,0,0.15)' },
-  progressFill: { height: '100%', borderRadius: 4, backgroundColor: Colors.primary },
-  progressThumb: { position: 'absolute', top: 7, width: 14, height: 14, borderRadius: 7, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.secondary },
+  progressContainer: { flex: 1, height: 36, justifyContent: 'center' },
+  progressTrack: { height: 5, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.15)' },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: Colors.primary },
+  progressThumb: { position: 'absolute', top: 9, width: 18, height: 18, borderRadius: 9, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.secondary },
   time: { color: Colors.mutedForeground, minWidth: 36, fontSize: 11 },
 })
