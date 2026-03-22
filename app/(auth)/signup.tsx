@@ -46,7 +46,7 @@ export default function SignupScreen() {
     return (
       <View style={[styles.container, styles.successContainer]}>
         <Text variant="headlineMedium" style={styles.title}>{t('signUpSuccess')}</Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>{t('signUpSuccessMessage')}</Text>
+        <Text variant="bodyMedium" style={styles.subtitle}>{t('checkEmail')}</Text>
         <Link href="/(auth)/login" asChild>
           <Button mode="contained" style={styles.button} buttonColor={Colors.primary} textColor={Colors.primaryForeground}>
             {t('login')}
