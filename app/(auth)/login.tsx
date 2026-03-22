@@ -15,13 +15,22 @@ export default function LoginScreen() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
+  const getErrorMessage = (message: string): string => {
+    const msg = message.toLowerCase()
+    if (msg.includes("invalid login credentials") || msg.includes("invalid_credentials") || msg.includes("invalid email or password")) return t('errorInvalidCredentials')
+    if (msg.includes("email not confirmed") || msg.includes("email_not_confirmed")) return t('errorEmailNotConfirmed')
+    if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("security purposes")) return t('errorRateLimit')
+    if (msg.includes("invalid format") || msg.includes("invalid email")) return t('errorInvalidEmail')
+    return t('errorDefault')
+  }
+
   const handleLogin = async () => {
     if (!email || !password) { setError(t('fillAllFields')); return }
     setLoading(true)
     setError('')
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (authError) setError(t('authError'))
+    if (authError) setError(getErrorMessage(authError.message))
   }
 
   return (
