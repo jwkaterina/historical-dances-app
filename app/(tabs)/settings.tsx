@@ -198,31 +198,29 @@ export default function SettingsScreen() {
 
       <Divider style={styles.divider} />
 
-      {(user || adminUnlocked) && (
-        <View style={styles.logoutSection}>
-          {user ? (
-            <Button
-              mode="outlined"
-              icon="logout"
-              onPress={async () => { await signOut(); toastService.show('toastLoggedOut') }}
-              textColor={Colors.destructive}
-              style={styles.logoutBtn}
-            >
-              {t('logout')}
-            </Button>
-          ) : (
-            <Button
-              mode="outlined"
-              icon="login"
-              onPress={() => router.push('/(auth)/login')}
-              textColor={Colors.primary}
-              style={styles.loginBtn}
-            >
-              {t('login')}
-            </Button>
-          )}
-        </View>
-      )}
+      <View style={styles.logoutSection}>
+        {user ? (
+          <Button
+            mode="outlined"
+            icon="logout"
+            onPress={async () => { await signOut(); toastService.show('toastLoggedOut') }}
+            textColor={Colors.destructive}
+            style={styles.logoutBtn}
+          >
+            {t('logout')}
+          </Button>
+        ) : (
+          <Button
+            mode="outlined"
+            icon="login"
+            onPress={() => router.push('/(auth)/login')}
+            textColor={Colors.primary}
+            style={styles.loginBtn}
+          >
+            {t('login')}
+          </Button>
+        )}
+      </View>
 
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={4000}>
         {snackbar}
