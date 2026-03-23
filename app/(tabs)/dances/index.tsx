@@ -55,18 +55,22 @@ export default function DancesScreen() {
         >
           {t('allDifficulties')}
         </Chip>
-        {DIFFICULTIES.map(d => (
-          <Chip
-            key={d}
-            selected={diffFilter === d}
-            onPress={() => setDiffFilter(d === diffFilter ? null : d)}
-            style={[styles.chip, diffFilter === d && styles.chipSelected]}
-            textStyle={{ color: diffFilter === d ? Colors.primaryForeground : Colors.mutedForeground, fontSize: 12 }}
-            compact
-          >
-            {t(d)}
-          </Chip>
-        ))}
+        {DIFFICULTIES.map((d, idx) => {
+          const level = idx + 1
+          const active = diffFilter === d
+          const stars = '★'.repeat(level) + '☆'.repeat(4 - level)
+          return (
+            <Chip
+              key={d}
+              onPress={() => setDiffFilter(d === diffFilter ? null : d)}
+              style={[styles.chip, active && styles.chipSelected]}
+              textStyle={{ color: active ? Colors.primaryForeground : Colors.mutedForeground, fontSize: 13, letterSpacing: 1 }}
+              compact
+            >
+              {stars}
+            </Chip>
+          )
+        })}
       </View>
 
       {isLoading ? (
