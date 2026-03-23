@@ -60,6 +60,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="my-dances"
+        options={{
+          title: t('myDances'),
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="heart-multiple" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="balls"
         options={{
           title: t('balls'),

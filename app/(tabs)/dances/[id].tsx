@@ -10,6 +10,9 @@ import { Fonts } from '@/lib/fonts'
 import VideoPlayer from '@/components/VideoPlayer'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import DownloadButton from '@/components/DownloadButton'
+import DifficultyStars from '@/components/DifficultyStars'
+import FavoriteButton from '@/components/FavoriteButton'
+import DanceListSelector from '@/components/DanceListSelector'
 import { useAudioPlayer, PLAYER_HEIGHT } from '@/contexts/AudioPlayerContext'
 import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/database'
 
@@ -73,12 +76,12 @@ export default function DanceDetailScreen() {
         <Text variant="headlineMedium" style={styles.title}>{name}</Text>
 
         <View style={styles.meta}>
-          {dance.difficulty && (
-            <Chip style={styles.badge} textStyle={styles.badgeText}>
-              {t(dance.difficulty as any)}
-            </Chip>
-          )}
+          {dance.difficulty && <DifficultyStars difficulty={dance.difficulty} size={16} />}
           {dance.origin && <Text variant="bodySmall" style={styles.origin}>{t('origin')}: {dance.origin}</Text>}
+          <View style={styles.statusActions}>
+            <FavoriteButton danceId={dance.id} />
+            <DanceListSelector danceId={dance.id} />
+          </View>
         </View>
 
         {videos.length > 0 && (
@@ -217,8 +220,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontFamily: Fonts.heading, color: Colors.foreground, marginBottom: 8 },
   meta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 16 },
-  badge: { borderRadius: 6, backgroundColor: Colors.secondary },
-  badgeText: { color: Colors.secondaryForeground, fontSize: 12, fontFamily: 'Lora_600SemiBold' },
+  statusActions: { flexDirection: 'row', alignItems: 'center', marginLeft: 'auto' },
   origin: { color: Colors.mutedForeground },
   section: { marginBottom: 20 },
   sectionTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.mutedForeground, textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5, marginBottom: 6 },

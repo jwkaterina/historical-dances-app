@@ -82,7 +82,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const inAuthGroup = segments[0] === '(auth)'
     // Redirect logged-in users away from auth screens; unauthenticated users can browse freely
     if (user && inAuthGroup) {
-      router.replace('/(tabs)')
+      if (router.canGoBack()) {
+        router.back()
+      } else {
+        router.replace('/(tabs)')
+      }
     }
   }, [user, loading, segments])
 

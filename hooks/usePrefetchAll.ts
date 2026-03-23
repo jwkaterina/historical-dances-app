@@ -9,6 +9,8 @@ import { DANCES_KEY } from '@/hooks/useDances'
 import { BALLS_KEY, DANCES_FOR_BALL_KEY } from '@/hooks/useBalls'
 import { MUSIC_KEY } from '@/hooks/useMusic'
 import { TUTORIALS_KEY, TUTORIAL_CATEGORIES_KEY } from '@/hooks/useTutorials'
+import { USER_DANCE_STATUS_KEY } from '@/hooks/useUserDanceStatus'
+import { fetchUserDanceStatuses } from '@/lib/api/userDanceStatus'
 
 const PREFETCH_OPTS = { retry: false } as const
 
@@ -25,6 +27,7 @@ export function usePrefetchAll() {
         qc.prefetchQuery({ queryKey: [TUTORIALS_KEY], queryFn: fetchTutorials, ...PREFETCH_OPTS }),
         qc.prefetchQuery({ queryKey: [TUTORIAL_CATEGORIES_KEY], queryFn: fetchTutorialCategories, ...PREFETCH_OPTS }),
         qc.prefetchQuery({ queryKey: [DANCES_FOR_BALL_KEY], queryFn: fetchDancesForBall, ...PREFETCH_OPTS }),
+        qc.prefetchQuery({ queryKey: [USER_DANCE_STATUS_KEY], queryFn: fetchUserDanceStatuses, ...PREFETCH_OPTS }),
       ])
 
       // Step 2: read lists from cache to get IDs for detail prefetches

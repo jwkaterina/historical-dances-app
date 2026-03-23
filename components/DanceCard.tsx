@@ -1,8 +1,11 @@
 import { View, StyleSheet } from 'react-native'
-import { Card, Text, Chip } from 'react-native-paper'
+import { Card, Text } from 'react-native-paper'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
+import DifficultyStars from '@/components/DifficultyStars'
+import FavoriteButton from '@/components/FavoriteButton'
+import DanceListSelector from '@/components/DanceListSelector'
 import type { Dance } from '@/types/database'
 
 interface Props {
@@ -17,22 +20,19 @@ export default function DanceCard({ dance, onPress }: Props) {
   return (
     <Card style={styles.card} mode="elevated" onPress={onPress}>
       <Card.Content style={styles.content}>
-        <View style={styles.row}>
-          <View style={styles.left}>
-            <Text variant="titleMedium" style={styles.name}>{name}</Text>
-            {dance.origin && (
-              <Text variant="bodySmall" style={styles.origin}>{dance.origin}</Text>
-            )}
+        <View style={styles.topRow}>
+          {dance.difficulty ? (
+            <DifficultyStars difficulty={dance.difficulty} />
+          ) : <View />}
+          <View style={styles.actions}>
+            <FavoriteButton danceId={dance.id} size={20} />
+            <DanceListSelector danceId={dance.id} size={20} />
           </View>
-          {dance.difficulty && (
-            <Chip
-              style={styles.chip}
-              textStyle={styles.chipText}
-            >
-              {t(dance.difficulty as any)}
-            </Chip>
-          )}
         </View>
+        <Text variant="titleMedium" style={styles.name}>{name}</Text>
+        {dance.origin && (
+          <Text variant="bodySmall" style={styles.origin}>{dance.origin}</Text>
+        )}
       </Card.Content>
     </Card>
   )
@@ -40,11 +40,9 @@ export default function DanceCard({ dance, onPress }: Props) {
 
 const styles = StyleSheet.create({
   card: { marginBottom: 8, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
-  content: { paddingVertical: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  left: { flex: 1 },
+  content: { paddingVertical: 8 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 },
+  actions: { flexDirection: 'row', alignItems: 'center' },
   name: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
   origin: { color: Colors.mutedForeground, marginTop: 2 },
-  chip: { borderRadius: 4, backgroundColor: Colors.muted },
-  chipText: { color: Colors.mutedForeground, fontSize: 11, fontFamily: Fonts.body },
 })

@@ -123,6 +123,16 @@ export interface Tutorial {
   tutorial_categories?: TutorialCategory | null
 }
 
+export interface UserDanceStatus {
+  id: string
+  user_id: string
+  dance_id: string
+  is_favorite: boolean
+  list_type: 'already_learned' | 'learning' | 'plan_to_learn' | null
+  created_at: string
+  updated_at: string
+}
+
 export type SectionEntry =
   | { kind: 'dance'; order_index: number; danceId: string; musicIds?: string[] }
   | { kind: 'text'; order_index: number; content_de: string; content_ru: string }
