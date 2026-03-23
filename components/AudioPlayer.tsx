@@ -29,7 +29,7 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
         await Audio.setAudioModeAsync({
           playsInSilentModeIOS: true,
           shouldDuckAndroid: true,
-          staysActiveInBackground: false,
+          staysActiveInBackground: true,
         })
         const { sound: s } = await Audio.Sound.createAsync(
           { uri: url },
