@@ -66,8 +66,6 @@ export interface Ball {
   place: string | null
   place_de: string | null
   place_ru: string | null
-  info_de: string | null
-  info_ru: string | null
   created_at: string
   user_id: string | null
 }
@@ -129,6 +127,17 @@ export interface UserDanceStatus {
   dance_id: string
   is_favorite: boolean
   list_type: 'already_learned' | 'learning' | 'plan_to_learn' | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Faq {
+  id: string
+  question_de: string
+  question_ru: string
+  answer_de: string
+  answer_ru: string
+  order_index: number
   created_at: string
   updated_at: string
 }

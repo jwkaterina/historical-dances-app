@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo } from 'react'
-import { FlatList, StyleSheet, View, RefreshControl } from 'react-native'
-import { Text, Searchbar, FAB, ActivityIndicator, Chip } from 'react-native-paper'
+import { FlatList, StyleSheet, View, RefreshControl, TouchableOpacity } from 'react-native'
+import { Text, Searchbar, FAB, ActivityIndicator, Chip, Icon } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useBalls } from '@/hooks/useBalls'
 import { useAuth } from '@/hooks/useAuth'
 import { Colors } from '@/lib/colors'
+import { Fonts } from '@/lib/fonts'
 import BallCard from '@/components/BallCard'
 import type { BallWithSections } from '@/types/database'
 
@@ -63,6 +64,11 @@ export default function BallsScreen() {
         iconColor={Colors.mutedForeground}
         placeholderTextColor={Colors.mutedForeground}
       />
+
+      <TouchableOpacity style={styles.faqLink} onPress={() => router.push({ pathname: '/(tabs)/balls/faq', params: { from: t('balls') } })}>
+        <Icon source="frequently-asked-questions" size={22} color={Colors.primary} />
+        <Text variant="bodyLarge" style={styles.faqLinkText}>{t('faqs')}</Text>
+      </TouchableOpacity>
 
       {years.length > 0 && (
         <View style={styles.chips}>
@@ -140,6 +146,8 @@ export default function BallsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   searchbar: { margin: 12, marginBottom: 6, elevation: 0, backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border, borderRadius: 6 },
+  faqLink: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 10, marginTop: 4, marginBottom: 18 },
+  faqLinkText: { color: Colors.primary, fontFamily: Fonts.bodySemiBold, textDecorationLine: 'underline' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, marginBottom: 6, gap: 6 },
   chip: { borderRadius: 4, backgroundColor: Colors.muted },
   chipSelected: { backgroundColor: Colors.primary },

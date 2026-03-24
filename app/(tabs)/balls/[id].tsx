@@ -53,8 +53,6 @@ export default function BallDetailScreen() {
   const place = (language === 'de' ? ball.place_de : ball.place_ru) ?? ball.place ?? ''
   const formattedDate = ball.date ? format(new Date(ball.date), 'dd.MM.yyyy') : ''
   const sections = [...(ball.ball_sections || [])].sort((a, b) => a.order_index - b.order_index)
-  const rawInfo = language === 'de' ? ball.info_de : ball.info_ru
-
   const handleDelete = async () => {
     await deleteMutation.mutateAsync(ball.id)
     router.back()
@@ -70,13 +68,11 @@ export default function BallDetailScreen() {
         {place ? <Text variant="bodySmall" style={styles.metaText}>{place}</Text> : null}
       </View>
 
-      {rawInfo ? (
-        <TouchableOpacity style={styles.infoLink} onPress={() => router.push({ pathname: '/ball-info', params: { id: ball.id } })}>
-          <Icon source="information-outline" size={20} color={Colors.primary} />
-          <Text variant="bodyMedium" style={styles.infoLinkText}>{t('ballRules')}</Text>
-          <Icon source="chevron-right" size={20} color={Colors.mutedForeground} />
-        </TouchableOpacity>
-      ) : null}
+      <TouchableOpacity style={styles.infoLink} onPress={() => router.push({ pathname: '/(tabs)/balls/faq', params: { from: name } })}>
+        <Icon source="frequently-asked-questions" size={20} color={Colors.primary} />
+        <Text variant="bodyMedium" style={styles.infoLinkText}>{t('ballInfoLink')}</Text>
+        <Icon source="chevron-right" size={20} color={Colors.mutedForeground} />
+      </TouchableOpacity>
 
       {sections.map(section => {
         const sectionName = (language === 'de' ? section.name_de : section.name_ru) ?? section.name ?? ''

@@ -223,6 +223,10 @@ export const translations = {
     ballInfoSaved: "Ball-Informationen gespeichert",
     ballInfoSaveFailed: "Fehler beim Speichern der Ball-Informationen",
 
+    faqs: "Häufig gestellte Fragen",
+    faqsDescription: "Antworten auf häufig gestellte Fragen",
+    noFaqsYet: "Noch keine Fragen vorhanden",
+
     language: "Sprache",
     account: "Konto",
     user: "Benutzer",
@@ -531,6 +535,10 @@ export const translations = {
     saveBallInfo: "Сохранить информацию",
     ballInfoSaved: "Информация о бале сохранена",
     ballInfoSaveFailed: "Ошибка при сохранении информации о бале",
+
+    faqs: "Часто задаваемые вопросы",
+    faqsDescription: "Ответы на часто задаваемые вопросы",
+    noFaqsYet: "Вопросов пока нет",
 
     language: "Язык",
     account: "Аккаунт",

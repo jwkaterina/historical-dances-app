@@ -35,10 +35,11 @@ export default function BallsLayout() {
         contentStyle: { backgroundColor: Colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: t('balls') }} />
-      <Stack.Screen name="[id]" options={{ title: t('balls') }} />
+      <Stack.Screen name="index" options={{ title: t('balls'), headerBackTitle: t('balls') }} />
+      <Stack.Screen name="[id]" options={{ title: t('balls'), headerBackTitle: t('balls') }} />
       <Stack.Screen name="create" options={{ title: t('createBall') }} />
       <Stack.Screen name="dance/[id]" options={{ title: '' }} />
+      <Stack.Screen name="faq" options={{ title: '' }} />
     </Stack>
   )
 }

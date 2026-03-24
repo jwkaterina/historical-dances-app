@@ -3,7 +3,7 @@ import type { Ball, BallWithSections, SectionFormData } from '@/types/database'
 
 const BALL_SELECT = `
   id, name, name_de, name_ru, date, place, place_de, place_ru,
-  info_de, info_ru, created_at, user_id,
+  created_at, user_id,
   ball_sections (
     id, name, name_de, name_ru, order_index,
     section_dances (
@@ -43,8 +43,6 @@ export interface BallFormData {
   date: string
   place_de: string
   place_ru: string
-  info_de?: string
-  info_ru?: string
   sections: SectionFormData[]
 }
 
@@ -62,8 +60,6 @@ export async function createBall(formData: BallFormData): Promise<Ball> {
       place: formData.place_de,
       place_de: formData.place_de,
       place_ru: formData.place_ru,
-      info_de: formData.info_de ?? null,
-      info_ru: formData.info_ru ?? null,
       user_id: user.id,
     })
     .select()
@@ -89,8 +85,6 @@ export async function updateBall(id: string, formData: BallFormData): Promise<vo
       place: formData.place_de,
       place_de: formData.place_de,
       place_ru: formData.place_ru,
-      info_de: formData.info_de ?? null,
-      info_ru: formData.info_ru ?? null,
     })
     .eq('id', id)
 
