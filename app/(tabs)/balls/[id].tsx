@@ -53,6 +53,7 @@ export default function BallDetailScreen() {
   const place = (language === 'de' ? ball.place_de : ball.place_ru) ?? ball.place ?? ''
   const formattedDate = ball.date ? format(new Date(ball.date), 'dd.MM.yyyy') : ''
   const sections = [...(ball.ball_sections || [])].sort((a, b) => a.order_index - b.order_index)
+  const getSectionName = (index: number) => language === 'ru' ? `Отделение ${index + 1}` : `Abteilung ${index + 1}`
   const handleDelete = async () => {
     await deleteMutation.mutateAsync(ball.id)
     router.back()
@@ -74,13 +75,16 @@ export default function BallDetailScreen() {
         <Icon source="chevron-right" size={20} color={Colors.mutedForeground} />
       </TouchableOpacity>
 
-      {sections.map(section => {
-        const sectionName = (language === 'de' ? section.name_de : section.name_ru) ?? section.name ?? ''
+      {sections.length === 0 && (
+        <Text variant="bodyMedium" style={{ color: Colors.mutedForeground, textAlign: 'center', paddingVertical: 24 }}>{t('noSections')}</Text>
+      )}
+
+      {sections.map((section, sectionIndex) => {
         const entries = buildEntries(section)
         let danceCount = 0
         return (
-          <View key={section.id} style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>{sectionName}</Text>
+          <Card key={section.id} style={styles.sectionCard} mode="outlined">
+            <Card.Title title={getSectionName(sectionIndex)} titleVariant="titleMedium" titleStyle={styles.sectionTitle} />
             <Divider style={styles.divider} />
             {entries.map((entry, idx) => {
               if (entry.type === 'dance') {
@@ -138,7 +142,7 @@ export default function BallDetailScreen() {
                 )
               }
             })}
-          </View>
+          </Card>
         )
       })}
 
@@ -179,19 +183,19 @@ const styles = StyleSheet.create({
   metaText: { color: Colors.mutedForeground },
   infoLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
   infoLinkText: { flex: 1, color: Colors.primary },
-  section: { marginBottom: 24 },
-  sectionTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, marginBottom: 4 },
+  sectionCard: { marginBottom: 16, backgroundColor: Colors.card, borderColor: Colors.border, paddingBottom: 8 },
+  sectionTitle: { fontFamily: Fonts.heading, color: Colors.foreground },
   divider: { marginBottom: 8, backgroundColor: Colors.border },
   danceEntry: { marginBottom: 12 },
-  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 8, gap: 8 },
+  entryRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, gap: 8 },
   entryNum: { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.primary, justifyContent: 'center', alignItems: 'center' },
   num: { color: Colors.primaryForeground, fontFamily: Fonts.heading, fontSize: 11 },
   danceName: { flex: 1, color: Colors.foreground, fontFamily: Fonts.bodySemiBold, fontSize: 16, textDecorationLine: 'underline' },
-  musicRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingLeft: 34, paddingBottom: 6 },
+  musicRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingLeft: 42, paddingRight: 16, paddingBottom: 6 },
   trackChipRow: { flexDirection: 'row', alignItems: 'center' },
   musicChip: { borderRadius: 4, backgroundColor: Colors.muted, borderWidth: 1, borderColor: 'transparent' },
   musicChipActive: { backgroundColor: Colors.muted, borderColor: Colors.primary, borderWidth: 1.5 },
-  textCard: { marginVertical: 4, backgroundColor: Colors.cardSecondary, borderColor: Colors.border },
+  textCard: { marginVertical: 4, marginHorizontal: 16, backgroundColor: Colors.cardSecondary, borderColor: Colors.border },
   textContent: { color: Colors.mutedForeground },
   actions: { flexDirection: 'row', gap: 12, marginTop: 24, justifyContent: 'center' },
   actionBtn: { flex: 1, borderColor: Colors.border },
