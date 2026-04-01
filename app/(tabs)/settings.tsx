@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { StyleSheet, View, Pressable } from 'react-native'
+import { StyleSheet, View, ScrollView, Pressable } from 'react-native'
 import { Text, List, Divider, Button, Avatar, ActivityIndicator, Switch, Snackbar } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useAuth } from '@/hooks/useAuth'
 import { toastService } from '@/lib/toastService'
 import { useMusic } from '@/hooks/useMusic'
-import { isTrackDownloaded, downloadTrackFile, deleteAllTrackFiles } from '@/hooks/useTrackDownload'
+import { isTrackDownloaded, downloadTrackFile, deleteAllTrackFiles, notifyDownloadChange } from '@/hooks/useTrackDownload'
 import { getWifiOnlySetting, setWifiOnlySetting, canDownloadNow } from '@/lib/downloadPrefs'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
@@ -38,7 +38,7 @@ export default function SettingsScreen() {
   useEffect(() => {
     const tracks = allTracks.filter(tr => !!tr.audio_url)
     if (tracks.length === 0) return
-    Promise.all(tracks.map(tr => isTrackDownloaded(tr.id))).then(results => {
+    Promise.all(tracks.map(tr => isTrackDownloaded(tr.id, tr.audio_url!))).then(results => {
       const downloadedCount = results.filter(Boolean).length
       if (downloadedCount === tracks.length) {
         setDlState('done')
@@ -66,12 +66,13 @@ export default function SettingsScreen() {
 
     for (let i = 0; i < tracks.length; i++) {
       const track = tracks[i]
-      const already = await isTrackDownloaded(track.id)
+      const already = await isTrackDownloaded(track.id, track.audio_url!)
       if (!already) await downloadTrackFile(track.id, track.audio_url!)
       setDlProgress({ done: i + 1, total: tracks.length })
     }
 
     setDlState('done')
+    notifyDownloadChange()
   }
 
   const handleDeleteAll = async () => {
@@ -95,7 +96,7 @@ export default function SettingsScreen() {
   const tracksWithAudio = allTracks.filter(tr => !!tr.audio_url)
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.profileSection}>
         <Pressable onPress={handleAvatarTap}>
           <Avatar.Icon size={64} icon="account" style={styles.avatar} color={Colors.primaryForeground} />
@@ -225,12 +226,13 @@ export default function SettingsScreen() {
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={4000}>
         {snackbar}
       </Snackbar>
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  contentContainer: { paddingBottom: 24 },
   profileSection: { alignItems: 'center', padding: 24, backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border },
   avatar: { backgroundColor: Colors.primary, marginBottom: 12 },
   email: { color: Colors.mutedForeground },

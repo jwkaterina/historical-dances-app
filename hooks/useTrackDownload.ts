@@ -8,12 +8,19 @@ export type DownloadState = 'idle' | 'downloading' | 'downloaded'
 
 const TRACKS_DIR = (FileSystem.documentDirectory ?? '') + 'tracks/'
 
-export function trackFilePath(trackId: string) {
-  return TRACKS_DIR + trackId
+// Simple event system to notify useTrackDownload hooks of bulk changes
+type Listener = () => void
+const listeners = new Set<Listener>()
+export function onDownloadChange(fn: Listener) { listeners.add(fn); return () => { listeners.delete(fn) } }
+export function notifyDownloadChange() { listeners.forEach(fn => fn()) }
+
+export function trackFilePath(trackId: string, audioUrl?: string) {
+  const ext = audioUrl?.match(/\.(\w{2,4})(?:\?|$)/)?.[1] || 'mp3'
+  return TRACKS_DIR + trackId + '.' + ext
 }
 
-async function isDownloaded(trackId: string) {
-  const info = await FileSystem.getInfoAsync(trackFilePath(trackId))
+async function isDownloaded(trackId: string, audioUrl?: string) {
+  const info = await FileSystem.getInfoAsync(trackFilePath(trackId, audioUrl))
   return info.exists
 }
 
@@ -36,8 +43,8 @@ function parseStorageUrl(url: string): { bucket: string; path: string } | null {
  * and a signed URL cannot be obtained (no internet / auth failure).
  */
 export async function resolvePlayUrl(trackId: string, audioUrl: string): Promise<string> {
-  const local = await isDownloaded(trackId)
-  if (local) return trackFilePath(trackId)
+  const local = await isDownloaded(trackId, audioUrl)
+  if (local) return trackFilePath(trackId, audioUrl)
 
   const parsed = parseStorageUrl(audioUrl)
   if (parsed) {
@@ -54,23 +61,24 @@ export async function resolvePlayUrl(trackId: string, audioUrl: string): Promise
   throw new TrackNotAvailableOfflineError()
 }
 
-export async function isTrackDownloaded(trackId: string): Promise<boolean> {
-  const info = await FileSystem.getInfoAsync(trackFilePath(trackId))
+export async function isTrackDownloaded(trackId: string, audioUrl?: string): Promise<boolean> {
+  const info = await FileSystem.getInfoAsync(trackFilePath(trackId, audioUrl))
   return info.exists
 }
 
 /** Deletes all downloaded track files. */
 export async function deleteAllTrackFiles(): Promise<void> {
   try { await FileSystem.deleteAsync(TRACKS_DIR, { idempotent: true }) } catch {}
+  notifyDownloadChange()
 }
 
 /** Downloads a single track file. Returns true on success. */
 export async function downloadTrackFile(trackId: string, audioUrl: string): Promise<boolean> {
   try {
     await FileSystem.makeDirectoryAsync(TRACKS_DIR, { intermediates: true })
-    const result = await FileSystem.downloadAsync(audioUrl, trackFilePath(trackId))
+    const result = await FileSystem.downloadAsync(audioUrl, trackFilePath(trackId, audioUrl))
     if (result?.status === 200) return true
-    await FileSystem.deleteAsync(trackFilePath(trackId), { idempotent: true })
+    await FileSystem.deleteAsync(trackFilePath(trackId, audioUrl), { idempotent: true })
     return false
   } catch {
     return false
@@ -83,10 +91,14 @@ export function useTrackDownload(trackId: string, audioUrl: string | null) {
   const dlRef = useRef<FileSystem.DownloadResumable | null>(null)
 
   useEffect(() => {
-    isDownloaded(trackId).then(exists => {
-      if (exists) setState('downloaded')
-    })
-  }, [trackId])
+    const check = () => {
+      isDownloaded(trackId, audioUrl ?? undefined).then(exists => {
+        setState(exists ? 'downloaded' : 'idle')
+      })
+    }
+    check()
+    return onDownloadChange(check)
+  }, [trackId, audioUrl])
 
   const download = async () => {
     if (!audioUrl || state !== 'idle') return
@@ -100,7 +112,7 @@ export function useTrackDownload(trackId: string, audioUrl: string | null) {
       await FileSystem.makeDirectoryAsync(TRACKS_DIR, { intermediates: true })
       const dl = FileSystem.createDownloadResumable(
         audioUrl,
-        trackFilePath(trackId),
+        trackFilePath(trackId, audioUrl),
         {},
         ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
           if (totalBytesExpectedToWrite > 0) {
@@ -114,7 +126,7 @@ export function useTrackDownload(trackId: string, audioUrl: string | null) {
       if (result?.status === 200) {
         setState('downloaded')
       } else {
-        await FileSystem.deleteAsync(trackFilePath(trackId), { idempotent: true })
+        await FileSystem.deleteAsync(trackFilePath(trackId, audioUrl), { idempotent: true })
         setState('idle')
       }
     } catch {
@@ -124,7 +136,7 @@ export function useTrackDownload(trackId: string, audioUrl: string | null) {
   }
 
   const remove = async () => {
-    try { await FileSystem.deleteAsync(trackFilePath(trackId), { idempotent: true }) } catch {}
+    try { await FileSystem.deleteAsync(trackFilePath(trackId, audioUrl ?? undefined), { idempotent: true }) } catch {}
     setState('idle')
     setProgress(0)
   }
@@ -134,6 +146,6 @@ export function useTrackDownload(trackId: string, audioUrl: string | null) {
     progress,
     download,
     remove,
-    localPath: state === 'downloaded' ? trackFilePath(trackId) : null,
+    localPath: state === 'downloaded' ? trackFilePath(trackId, audioUrl ?? undefined) : null,
   }
 }
