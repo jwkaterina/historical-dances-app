@@ -4,6 +4,7 @@ import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import type { MusicTrack } from '@/types/database'
 import DownloadButton from '@/components/DownloadButton'
+import { useTrackDuration, formatDuration } from '@/hooks/useTrackDuration'
 
 interface Props {
   track: MusicTrack
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function MusicCard({ track, isPlaying, language, onPress }: Props) {
+  const duration = useTrackDuration(track.id, track.audio_url)
   const dances = (track.dance_music ?? [])
     .map(dm => dm.dances)
     .filter(Boolean)
@@ -42,13 +44,14 @@ export default function MusicCard({ track, isPlaying, language, onPress }: Props
             {track.genre && <Text variant="bodySmall" style={styles.metaText}>{track.genre}</Text>}
           </View>
         </View>
-        <DownloadButton trackId={track.id} audioUrl={track.audio_url} />
+        {duration != null && <Text style={styles.duration}>{formatDuration(duration)}</Text>}
         <IconButton
           icon={isPlaying ? 'pause-circle-outline' : 'play-circle-outline'}
           iconColor={Colors.mutedForeground}
           size={36}
           onPress={onPress}
         />
+        <DownloadButton trackId={track.id} audioUrl={track.audio_url} size={18} />
       </Card.Content>
     </Card>
   )
@@ -57,10 +60,11 @@ export default function MusicCard({ track, isPlaying, language, onPress }: Props
 const styles = StyleSheet.create({
   card: { marginBottom: 8, marginHorizontal: 12, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
   playing: { borderColor: Colors.primary, borderWidth: 1.5 },
-  content: { flexDirection: 'row', alignItems: 'center', paddingRight: 0 },
+  content: { flexDirection: 'row', alignItems: 'center', paddingRight: 8 },
   info: { flex: 1 },
   title: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground, fontSize: 16 },
   trackName: { color: Colors.mutedForeground, marginTop: 1 },
   meta: { flexDirection: 'row', gap: 8, marginTop: 2 },
   metaText: { color: Colors.mutedForeground },
+  duration: { color: Colors.mutedForeground, fontSize: 12, fontFamily: Fonts.body, minWidth: 32, textAlign: 'right' },
 })

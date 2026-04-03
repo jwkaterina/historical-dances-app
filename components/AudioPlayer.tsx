@@ -16,6 +16,7 @@ interface Props {
 export default function AudioPlayer({ url, title, artist, onClose }: Props) {
   const soundRef = useRef<Audio.Sound | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [ended, setEnded] = useState(false)
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
   const isSeeking = useRef(false)
@@ -39,7 +40,7 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
               if (!isSeeking.current) setPosition(status.positionMillis)
               setDuration(status.durationMillis ?? 0)
               setIsPlaying(status.isPlaying)
-              if (status.didJustFinish) setIsPlaying(false)
+              if (status.didJustFinish) { setIsPlaying(false); setEnded(true) }
             }
           }
         )
@@ -57,8 +58,15 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
 
   const togglePlay = async () => {
     if (!soundRef.current) return
-    if (isPlaying) await soundRef.current.pauseAsync()
-    else await soundRef.current.playAsync()
+    if (ended) {
+      await soundRef.current.setPositionAsync(0)
+      await soundRef.current.playAsync()
+      setEnded(false)
+    } else if (isPlaying) {
+      await soundRef.current.pauseAsync()
+    } else {
+      await soundRef.current.playAsync()
+    }
   }
 
   const formatTime = (ms: number) => {
@@ -140,7 +148,7 @@ export default function AudioPlayer({ url, title, artist, onClose }: Props) {
           )}
         </View>
         <Text variant="bodySmall" style={styles.time}>{formatTime(duration)}</Text>
-        <IconButton icon={isPlaying ? 'pause' : 'play'} size={28} onPress={togglePlay} iconColor={Colors.primary} style={styles.playBtn} />
+        <IconButton icon={isPlaying ? 'pause' : ended ? 'replay' : 'play'} size={28} onPress={togglePlay} iconColor={Colors.primary} style={styles.playBtn} />
       </View>
     </View>
   )

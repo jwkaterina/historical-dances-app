@@ -14,6 +14,7 @@ import DifficultyStars from '@/components/DifficultyStars'
 import FavoriteButton from '@/components/FavoriteButton'
 import DanceListSelector from '@/components/DanceListSelector'
 import { useAudioPlayer, PLAYER_HEIGHT } from '@/contexts/AudioPlayerContext'
+import { useTrackDuration, formatDuration } from '@/hooks/useTrackDuration'
 import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/database'
 
 
@@ -173,23 +174,7 @@ export default function DanceDetailScreen() {
           {musicTracks.length === 0 ? (
             <Text variant="bodyMedium" style={styles.emptyText}>{t('noMusicAssociated')}</Text>
           ) : musicTracks.map((track: MusicTrack) => (
-            <Card key={track.id} style={[styles.musicCard, currentTrack?.id === track.id && styles.musicCardActive]} mode="elevated"
-              onPress={() => play(track)}>
-              <Card.Content style={styles.musicCardContent}>
-                <View style={{ flex: 1 }}>
-                  <Text variant="titleSmall" style={styles.musicTitle}>{track.title}</Text>
-                  {track.artist && <Text variant="bodySmall" style={styles.musicArtist}>{track.artist}</Text>}
-                  {track.tempo && <Text variant="bodySmall" style={styles.musicMeta}>{track.tempo} BPM</Text>}
-                </View>
-                <DownloadButton trackId={track.id} audioUrl={track.audio_url ?? null} />
-                <IconButton
-                  icon={currentTrack?.id === track.id ? 'pause-circle-outline' : 'play-circle-outline'}
-                  iconColor={Colors.mutedForeground}
-                  size={28}
-                  onPress={() => play(track)}
-                />
-              </Card.Content>
-            </Card>
+            <DanceMusicCard key={track.id} track={track} isPlaying={currentTrack?.id === track.id} onPress={() => play(track)} />
           ))}
         </View>
 
@@ -211,6 +196,29 @@ export default function DanceDetailScreen() {
         onConfirm={handleDelete} onDismiss={() => setShowDelete(false)} loading={deleteMutation.isPending} />
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={5000}>{snackbar}</Snackbar>
     </>
+  )
+}
+
+function DanceMusicCard({ track, isPlaying, onPress }: { track: MusicTrack; isPlaying: boolean; onPress: () => void }) {
+  const duration = useTrackDuration(track.id, track.audio_url)
+  return (
+    <Card style={[styles.musicCard, isPlaying && styles.musicCardActive]} mode="elevated" onPress={onPress}>
+      <Card.Content style={styles.musicCardContent}>
+        <View style={{ flex: 1 }}>
+          <Text variant="titleSmall" style={styles.musicTitle}>{track.title}</Text>
+          {track.artist && <Text variant="bodySmall" style={styles.musicArtist}>{track.artist}</Text>}
+          {track.tempo && <Text variant="bodySmall" style={styles.musicMeta}>{track.tempo} BPM</Text>}
+        </View>
+        {duration != null && <Text style={styles.musicDuration}>{formatDuration(duration)}</Text>}
+        <IconButton
+          icon={isPlaying ? 'pause-circle-outline' : 'play-circle-outline'}
+          iconColor={Colors.mutedForeground}
+          size={28}
+          onPress={onPress}
+        />
+        <DownloadButton trackId={track.id} audioUrl={track.audio_url ?? null} size={18} />
+      </Card.Content>
+    </Card>
   )
 }
 
@@ -238,6 +246,7 @@ const styles = StyleSheet.create({
   musicTitle: { fontFamily: Fonts.bodySemiBold, color: Colors.foreground },
   musicArtist: { color: Colors.mutedForeground },
   musicMeta: { color: Colors.mutedForeground },
+  musicDuration: { color: Colors.mutedForeground, fontSize: 12, fontFamily: Fonts.body, minWidth: 32, textAlign: 'right' },
   emptyText: { color: Colors.mutedForeground, fontStyle: 'italic' },
   tutorialCard: { marginBottom: 8, backgroundColor: Colors.card, borderColor: Colors.border },
   tutorialRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },

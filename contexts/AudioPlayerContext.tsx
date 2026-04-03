@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback } from 'react'
 import type { MusicTrack } from '@/types/database'
 import { resolvePlayUrl } from '@/hooks/useTrackDownload'
 import { toastService } from '@/lib/toastService'
+import { requestPauseAllVideos } from '@/lib/playbackCoordinator'
 
 export const PLAYER_HEIGHT = 96
 
@@ -22,6 +23,7 @@ export function AudioPlayerProvider({ children }: { children: React.ReactNode })
     if (currentTrack?.id === track.id) {
       setCurrentTrack(null); setPlayUrl(null); return
     }
+    requestPauseAllVideos()
     if (!track.audio_url) {
       setCurrentTrack(track); setPlayUrl(null); return
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { View, StyleSheet, ViewStyle, useWindowDimensions, TouchableOpacity } from 'react-native'
 import { Icon, Text } from 'react-native-paper'
 import YoutubeIframe from 'react-native-youtube-iframe'
@@ -8,6 +8,8 @@ import Constants from 'expo-constants'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
+import { useAudioPlayer } from '@/contexts/AudioPlayerContext'
+import { onVideoPauseRequest } from '@/lib/playbackCoordinator'
 import type { DanceVideo, FigureVideo } from '@/types/database'
 
 interface Props {
@@ -54,7 +56,17 @@ export default function VideoPlayer({ video, style }: Props) {
 }
 
 function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: { videoId: string; playerWidth: number; playerHeight: number; style?: ViewStyle }) {
+  const { stop: stopAudio } = useAudioPlayer()
   const [hasError, setHasError] = useState(false)
+  const [mountKey, setMountKey] = useState(0)
+
+  useEffect(() => {
+    return onVideoPauseRequest(() => setMountKey(k => k + 1))
+  }, [])
+
+  const onStateChange = useCallback((state: string) => {
+    if (state === 'playing') stopAudio()
+  }, [stopAudio])
 
   if (hasError) {
     return (
@@ -67,9 +79,11 @@ function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: {
   return (
     <View style={[styles.container, style]}>
       <YoutubeIframe
+        key={mountKey}
         height={playerHeight}
         width={playerWidth}
         videoId={videoId}
+        onChangeState={onStateChange}
         webViewProps={{
           scrollEnabled: false,
           allowsInlineMediaPlayback: true,
@@ -86,12 +100,14 @@ function YoutubePlayerWithError({ videoId, playerWidth, playerHeight, style }: {
 }
 
 function UploadedVideoPlayer({ url, width, height, style }: { url: string; width: number; height: number; style?: ViewStyle }) {
+  const { stop: stopAudio } = useAudioPlayer()
   const isFocused = useIsFocused()
+  const [started, setStarted] = useState(false)
   const [ended, setEnded] = useState(false)
   const player = useVideoPlayer({ uri: url }, p => { p.loop = false })
 
   useEffect(() => {
-    const sub = player.addListener('playToEnd', () => setEnded(true))
+    const sub = player.addListener('playToEnd', () => { setEnded(true); setStarted(false) })
     return () => sub.remove()
   }, [player])
 
@@ -99,8 +115,28 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
     if (!isFocused) player.pause()
   }, [isFocused])
 
+  // Pause video when audio starts
+  useEffect(() => {
+    return onVideoPauseRequest(() => player.pause())
+  }, [player])
+
+  // Stop audio when video starts playing (covers native controls too)
+  useEffect(() => {
+    const sub = player.addListener('playingChange', ({ isPlaying: nowPlaying }: { isPlaying: boolean }) => {
+      if (nowPlaying) stopAudio()
+    })
+    return () => sub.remove()
+  }, [player, stopAudio])
+
+  const handlePlay = () => {
+    setStarted(true)
+    setEnded(false)
+    player.play()
+  }
+
   const handleReplay = () => {
     setEnded(false)
+    setStarted(true)
     player.seekBy(-player.currentTime)
     player.play()
   }
@@ -111,7 +147,7 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
         player={player}
         style={{ width, height, borderRadius: 8 }}
         contentFit="contain"
-        nativeControls
+        nativeControls={started}
         allowsFullscreen
         allowsPictureInPicture
       />
@@ -123,6 +159,17 @@ function UploadedVideoPlayer({ url, width, height, style }: { url: string; width
           </View>
         )
       })()}
+      {!started && !ended && (
+        <TouchableOpacity
+          style={[styles.replayOverlay, { width, height, borderRadius: 8 }]}
+          onPress={handlePlay}
+          activeOpacity={0.8}
+        >
+          <View style={styles.replayButton}>
+            <Icon source="play" size={36} color="#fff" />
+          </View>
+        </TouchableOpacity>
+      )}
       {ended && (
         <TouchableOpacity
           style={[styles.replayOverlay, { width, height, borderRadius: 8 }]}
