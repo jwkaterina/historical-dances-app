@@ -131,6 +131,14 @@ export interface UserDanceStatus {
   updated_at: string
 }
 
+export interface BallPartner {
+  id: string
+  ball_id: string
+  section_dance_id: string
+  user_id: string
+  partner_name: string
+}
+
 export interface Faq {
   id: string
   question_de: string

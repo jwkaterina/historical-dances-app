@@ -40,6 +40,7 @@ export default function BallsLayout() {
       <Stack.Screen name="create" options={{ title: t('createBall') }} />
       <Stack.Screen name="dance/[id]" options={{ title: '' }} />
       <Stack.Screen name="faq" options={{ title: '' }} />
+      <Stack.Screen name="partners/[id]" options={{ title: t('partners') }} />
     </Stack>
   )
 }

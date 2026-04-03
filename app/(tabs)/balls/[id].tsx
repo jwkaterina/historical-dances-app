@@ -27,7 +27,7 @@ function buildEntries(section: BallSection): SectionEntry[] {
 export default function BallDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { t, language } = useLanguage()
-  const { isAdmin } = useAuth()
+  const { isAdmin, isAuthenticated } = useAuth()
   const router = useRouter()
   const [showDelete, setShowDelete] = useState(false)
   const { currentTrack, play } = useAudioPlayer()
@@ -74,6 +74,14 @@ export default function BallDetailScreen() {
         <Text variant="bodyMedium" style={styles.infoLinkText}>{t('ballInfoLink')}</Text>
         <Icon source="chevron-right" size={20} color={Colors.mutedForeground} />
       </TouchableOpacity>
+
+      {isAuthenticated && (
+        <TouchableOpacity style={styles.partnersLink} onPress={() => router.push({ pathname: '/(tabs)/balls/partners/[id]', params: { id: ball.id } })}>
+          <Icon source="account-multiple" size={20} color={Colors.primaryForeground} />
+          <Text variant="bodyMedium" style={styles.partnersLinkText}>{t('addPartners')}</Text>
+          <Icon source="chevron-right" size={20} color={Colors.primaryForeground} />
+        </TouchableOpacity>
+      )}
 
       {sections.length === 0 && (
         <Text variant="bodyMedium" style={{ color: Colors.mutedForeground, textAlign: 'center', paddingVertical: 24 }}>{t('noSections')}</Text>
@@ -199,4 +207,6 @@ const styles = StyleSheet.create({
   textContent: { color: Colors.mutedForeground },
   actions: { flexDirection: 'row', gap: 12, marginTop: 24, justifyContent: 'center' },
   actionBtn: { flex: 1, borderColor: Colors.border },
+  partnersLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingVertical: 12, paddingHorizontal: 14, backgroundColor: Colors.primary, borderRadius: 8 },
+  partnersLinkText: { flex: 1, color: Colors.primaryForeground, fontFamily: Fonts.bodySemiBold },
 })

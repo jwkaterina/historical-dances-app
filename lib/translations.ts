@@ -313,6 +313,12 @@ export const translations = {
     addDancesFromCatalog: "Fügen Sie Tänze aus dem Katalog hinzu",
     goToCatalog: "Zum Katalog",
     filterByList: "Nach Liste filtern",
+
+    partners: "Partner",
+    addPartners: "Partner eintragen",
+    partnerName: "Partnername",
+    partnersSaved: "Partner gespeichert",
+    partnersSaveFailed: "Fehler beim Speichern der Partner",
   },
   ru: {
     appName: "Исторические танцы",
@@ -626,6 +632,12 @@ export const translations = {
     addDancesFromCatalog: "Добавьте танцы из каталога",
     goToCatalog: "К каталогу",
     filterByList: "Фильтр по списку",
+
+    partners: "Партнёры",
+    addPartners: "Записать партнёров",
+    partnerName: "Имя партнёра",
+    partnersSaved: "Партнёры сохранены",
+    partnersSaveFailed: "Ошибка при сохранении партнёров",
   },
 } as const
 
