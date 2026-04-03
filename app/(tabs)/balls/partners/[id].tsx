@@ -4,7 +4,7 @@ import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, TextInput, Ic
 import { useLocalSearchParams } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useBall } from '@/hooks/useBalls'
-import { useBallPartners, useSaveBallPartners } from '@/hooks/useBallPartners'
+import { useBallPartners, useSaveBallPartner } from '@/hooks/useBallPartners'
 import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import type { SectionDance } from '@/types/database'
@@ -14,11 +14,11 @@ export default function PartnersScreen() {
   const { t, language } = useLanguage()
 
   const { data: ball, isLoading: ballLoading } = useBall(id)
-  const { data: existingPartners = [], isLoading: partnersLoading } = useBallPartners(id)
-  const saveMutation = useSaveBallPartners()
+  const { data: existingPartners = {}, isLoading: partnersLoading } = useBallPartners(id)
+  const saveMutation = useSaveBallPartner()
   const [snackbar, setSnackbar] = useState('')
 
-  // savedMap = what's persisted in DB, draftMap = current input values, editingSet = which are in edit mode
+  // savedMap = what's persisted, draftMap = current input values, editingSet = which are in edit mode
   const [savedMap, setSavedMap] = useState<Record<string, string>>({})
   const [draftMap, setDraftMap] = useState<Record<string, string>>({})
   const [editingSet, setEditingSet] = useState<Set<string>>(new Set())
@@ -26,10 +26,8 @@ export default function PartnersScreen() {
 
   useEffect(() => {
     if (!partnersLoading && !initialized) {
-      const map: Record<string, string> = {}
-      existingPartners.forEach(p => { map[p.section_dance_id] = p.partner_name })
-      setSavedMap(map)
-      setDraftMap(map)
+      setSavedMap(existingPartners)
+      setDraftMap(existingPartners)
       setInitialized(true)
     }
   }, [existingPartners, partnersLoading, initialized])
@@ -45,10 +43,7 @@ export default function PartnersScreen() {
   const handleSaveOne = useCallback(async (sectionDanceId: string) => {
     const partnerName = draftMap[sectionDanceId] ?? ''
     try {
-      await saveMutation.mutateAsync({
-        ballId: id,
-        partners: [{ section_dance_id: sectionDanceId, partner_name: partnerName }],
-      })
+      await saveMutation.mutateAsync({ ballId: id, sectionDanceId, partnerName })
       const trimmed = partnerName.trim()
       setSavedMap(prev => {
         const next = { ...prev }

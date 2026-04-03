@@ -75,13 +75,11 @@ export default function BallDetailScreen() {
         <Icon source="chevron-right" size={20} color={Colors.mutedForeground} />
       </TouchableOpacity>
 
-      {isAuthenticated && (
-        <TouchableOpacity style={styles.partnersLink} onPress={() => router.push({ pathname: '/(tabs)/balls/partners/[id]', params: { id: ball.id } })}>
-          <Icon source="account-multiple" size={20} color={Colors.primaryForeground} />
-          <Text variant="bodyMedium" style={styles.partnersLinkText}>{t('addPartners')}</Text>
-          <Icon source="chevron-right" size={20} color={Colors.primaryForeground} />
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity style={styles.partnersLink} onPress={() => router.push({ pathname: '/(tabs)/balls/partners/[id]', params: { id: ball.id } })}>
+        <Icon source="account-multiple" size={20} color={Colors.primaryForeground} />
+        <Text variant="bodyMedium" style={styles.partnersLinkText}>{t('addPartners')}</Text>
+        <Icon source="chevron-right" size={20} color={Colors.primaryForeground} />
+      </TouchableOpacity>
 
       {sections.length === 0 && (
         <Text variant="bodyMedium" style={{ color: Colors.mutedForeground, textAlign: 'center', paddingVertical: 24 }}>{t('noSections')}</Text>

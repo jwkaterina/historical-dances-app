@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchBallPartners, upsertBallPartners } from '@/lib/api/ballPartners'
+import { fetchBallPartners, saveBallPartner } from '@/lib/api/ballPartners'
 
 export const BALL_PARTNERS_KEY = 'ball_partners'
 
@@ -11,11 +11,11 @@ export function useBallPartners(ballId: string) {
   })
 }
 
-export function useSaveBallPartners() {
+export function useSaveBallPartner() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ ballId, partners }: { ballId: string; partners: { section_dance_id: string; partner_name: string }[] }) =>
-      upsertBallPartners(ballId, partners),
+    mutationFn: ({ ballId, sectionDanceId, partnerName }: { ballId: string; sectionDanceId: string; partnerName: string }) =>
+      saveBallPartner(ballId, sectionDanceId, partnerName),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: [BALL_PARTNERS_KEY, vars.ballId] })
     },
