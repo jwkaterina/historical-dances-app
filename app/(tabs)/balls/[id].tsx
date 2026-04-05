@@ -10,6 +10,8 @@ import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import ConfirmDialog from '@/components/ConfirmDialog'
 import DownloadButton from '@/components/DownloadButton'
+import FavoriteButton from '@/components/FavoriteButton'
+import DanceListSelector from '@/components/DanceListSelector'
 import { useAudioPlayer, PLAYER_HEIGHT } from '@/contexts/AudioPlayerContext'
 import type { BallSection, SectionDance, SectionText, MusicTrack } from '@/types/database'
 
@@ -111,6 +113,12 @@ export default function BallDetailScreen() {
                         onPress={() => dance && router.push({ pathname: `/(tabs)/balls/dance/${dance.id}`, params: { ballName: name } })}>
                         {danceName}
                       </Text>
+                      {dance && (
+                        <>
+                          <FavoriteButton danceId={dance.id} size={18} />
+                          <DanceListSelector danceId={dance.id} size={18} />
+                        </>
+                      )}
                     </View>
                     {tracks.length > 0 && (
                       <View style={styles.musicRow}>
