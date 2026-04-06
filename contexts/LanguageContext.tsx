@@ -26,7 +26,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         setLanguageState(stored)
       } else {
         const deviceLang = getLocales()[0]?.languageCode
-        setLanguageState(deviceLang === 'ru' ? 'ru' : 'de')
+        setLanguageState(deviceLang === 'de' ? 'de' : 'ru')
       }
     })
   }, [])
