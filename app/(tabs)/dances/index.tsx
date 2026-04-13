@@ -88,6 +88,7 @@ export default function DancesScreen() {
           renderItem={renderItem}
           extraData={diffFilter}
           contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="always"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />}
         />
       )}

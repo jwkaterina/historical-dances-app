@@ -206,6 +206,7 @@ export default function BallFormScreen() {
         ref={scrollRef}
         style={styles.container}
         contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="always"
         scrollEventThrottle={16}
         onScroll={(e) => { scrollOffsetRef.current = e.nativeEvent.contentOffset.y }}
       >

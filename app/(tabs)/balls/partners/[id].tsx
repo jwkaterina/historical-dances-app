@@ -78,7 +78,7 @@ export default function PartnersScreen() {
 
   return (
     <>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
         {sections.map((section, sectionIndex) => {
           const dances = [...(section.section_dances || [])].sort((a, b) => a.order_index - b.order_index)
           if (dances.length === 0) return null

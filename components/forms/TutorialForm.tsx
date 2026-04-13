@@ -142,7 +142,7 @@ export default function TutorialForm({ tutorialId }: Props) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
 
         <TextInput label={t('tutorialTitleDe')} value={titleDe} onChangeText={setTitleDe} {...inputProps} />
         <TextInput label={t('tutorialTitleRu')} value={titleRu} onChangeText={setTitleRu} {...inputProps} />

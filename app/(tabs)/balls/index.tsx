@@ -132,6 +132,7 @@ export default function BallsScreen() {
           keyExtractor={item => item.id}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
+          keyboardShouldPersistTaps="always"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />}
         />
       )}

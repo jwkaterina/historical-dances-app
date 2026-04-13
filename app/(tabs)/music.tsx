@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { FlatList, StyleSheet, View, RefreshControl } from 'react-native'
+import { FlatList, StyleSheet, View, RefreshControl, Keyboard } from 'react-native'
 import { Text, Searchbar, ActivityIndicator } from 'react-native-paper'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useMusic } from '@/hooks/useMusic'
@@ -33,7 +33,7 @@ export default function MusicScreen() {
       track={item}
       isPlaying={currentTrack?.id === item.id}
       language={language}
-      onPress={() => play(item)}
+      onPress={() => { Keyboard.dismiss(); play(item) }}
     />
   ), [currentTrack, language, play])
 
@@ -63,6 +63,7 @@ export default function MusicScreen() {
           keyExtractor={item => item.id}
           renderItem={renderItem}
           contentContainerStyle={[styles.list, currentTrack && { paddingBottom: PLAYER_HEIGHT + 8 }]}
+          keyboardShouldPersistTaps="always"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />}
         />
       )}

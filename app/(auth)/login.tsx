@@ -34,8 +34,8 @@ export default function LoginScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="always">
         <Text variant="headlineMedium" style={styles.title}>{t('appName')}</Text>
         <Text variant="bodyMedium" style={styles.subtitle}>{t('loginDescription')}</Text>
 

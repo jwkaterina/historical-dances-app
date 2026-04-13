@@ -57,8 +57,8 @@ export default function SignupScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="always">
         <Text variant="headlineMedium" style={styles.title}>{t('signUp')}</Text>
         <Text variant="bodyMedium" style={styles.subtitle}>{t('signUpDescription')}</Text>
 
