@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native'
+import { StyleSheet, View, ScrollView, Pressable, Alert } from 'react-native'
 import { Text, List, Divider, Button, Avatar, ActivityIndicator, Switch, Snackbar } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -15,7 +15,7 @@ import { useFocusEffect } from 'expo-router'
 
 export default function SettingsScreen() {
   const { t, language, setLanguage } = useLanguage()
-  const { user, signOut } = useAuth()
+  const { user, signOut, deleteAccount } = useAuth()
   const router = useRouter()
   const { data: allTracks = [] } = useMusic()
 
@@ -79,6 +79,28 @@ export default function SettingsScreen() {
     await deleteAllTrackFiles()
     setDlState('idle')
     setDlProgress({ done: 0, total: 0 })
+  }
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t('deleteAccountConfirmTitle'),
+      t('deleteAccountConfirmMessage'),
+      [
+        { text: t('deleteAccountCancel'), style: 'cancel' },
+        {
+          text: t('deleteAccountConfirm'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAccount()
+              toastService.show('toastAccountDeleted')
+            } catch {
+              toastService.show('toastAccountDeleteFailed')
+            }
+          }
+        }
+      ]
+    )
   }
 
   const handleAvatarTap = async () => {
@@ -201,15 +223,26 @@ export default function SettingsScreen() {
 
       <View style={styles.logoutSection}>
         {user ? (
-          <Button
-            mode="outlined"
-            icon="logout"
-            onPress={async () => { await signOut(); toastService.show('toastLoggedOut') }}
-            textColor={Colors.destructive}
-            style={styles.logoutBtn}
-          >
-            {t('logout')}
-          </Button>
+          <>
+            <Button
+              mode="outlined"
+              icon="logout"
+              onPress={async () => { await signOut(); toastService.show('toastLoggedOut') }}
+              textColor={Colors.destructive}
+              style={styles.logoutBtn}
+            >
+              {t('logout')}
+            </Button>
+            <Button
+              mode="text"
+              icon="delete-forever"
+              onPress={handleDeleteAccount}
+              textColor={Colors.mutedForeground}
+              style={styles.deleteAccountBtn}
+            >
+              {t('deleteAccount')}
+            </Button>
+          </>
         ) : (
           <Button
             mode="outlined"
@@ -255,4 +288,5 @@ const styles = StyleSheet.create({
   logoutSection: { padding: 24 },
   logoutBtn: { borderColor: Colors.destructive },
   loginBtn: { borderColor: Colors.primary },
+  deleteAccountBtn: { marginTop: 8 },
 })

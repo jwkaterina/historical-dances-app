@@ -46,7 +46,8 @@ export function useAuth() {
   }, [])
 
   const signOut = () => supabase.auth.signOut()
+  const deleteAccount = async () => { await supabase.rpc('delete_my_account') }
   const isAdmin = role === 'admin'
 
-  return { user, loading, isAuthenticated: !!user, isAdmin, signOut }
+  return { user, loading, isAuthenticated: !!user, isAdmin, signOut, deleteAccount }
 }
