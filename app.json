@@ -16,9 +16,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.historicaldances.app",
-      "buildNumber": "16",
+      "buildNumber": "17",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleLocalizations": ["de", "ru"]
       }
     },
     "android": {
@@ -27,7 +28,7 @@
         "backgroundColor": "#f5f1e6"
       },
       "package": "com.historicaldances.app",
-      "versionCode": 26,
+      "versionCode": 27,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
       ]
