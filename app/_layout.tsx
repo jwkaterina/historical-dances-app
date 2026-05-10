@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler'
-import { useColorScheme, View, LogBox } from 'react-native'
+import { useColorScheme, View, LogBox, StyleSheet } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Stack, useRouter, useSegments } from 'expo-router'
 import { useState, useEffect } from 'react'
@@ -8,7 +8,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { PaperProvider, Snackbar } from 'react-native-paper'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext'
 import { AudioPlayerProvider } from '@/contexts/AudioPlayerContext'
 import { toastService, isNetworkError } from '@/lib/toastService'
@@ -54,15 +54,23 @@ const queryClient = new QueryClient({
 
 function GlobalSnackbar() {
   const { t } = useLanguage()
+  const insets = useSafeAreaInsets()
   const [message, setMessage] = useState('')
+  const [action, setAction] = useState<import('@/lib/toastService').ToastAction | undefined>()
 
   useEffect(() => {
-    toastService.register((key) => setMessage(t(key)))
+    toastService.register((key, act) => { setMessage(t(key)); setAction(act) })
     return () => { toastService.register(null) }
   }, [t])
 
   return (
-    <Snackbar visible={!!message} onDismiss={() => setMessage('')} duration={4000}>
+    <Snackbar
+      visible={!!message}
+      onDismiss={() => { setMessage(''); setAction(undefined) }}
+      duration={4000}
+      action={action}
+      style={{ marginBottom: 62 + insets.bottom }}
+    >
       {message}
     </Snackbar>
   )

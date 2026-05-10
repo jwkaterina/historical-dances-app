@@ -1,18 +1,19 @@
 import type { TranslationKey } from '@/lib/translations'
 
-type ShowFn = (key: TranslationKey) => void
+export type ToastAction = { label: string; onPress: () => void }
+type ShowFn = (key: TranslationKey, action?: ToastAction) => void
 let showFn: ShowFn | null = null
 let lastKey: TranslationKey | null = null
 let lastAt = 0
 
 export const toastService = {
   register: (fn: ShowFn | null) => { showFn = fn },
-  show: (key: TranslationKey) => {
+  show: (key: TranslationKey, action?: ToastAction) => {
     const now = Date.now()
     if (key === lastKey && now - lastAt < 5000) return
     lastKey = key
     lastAt = now
-    showFn?.(key)
+    showFn?.(key, action)
   },
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { StyleSheet } from 'react-native'
 import { IconButton, Menu } from 'react-native-paper'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useUserDanceStatuses, useSetDanceListType } from '@/hooks/useUserDanceStatus'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -23,6 +24,7 @@ interface Props {
 
 export default function DanceListSelector({ danceId, size = 22 }: Props) {
   const { t } = useLanguage()
+  const router = useRouter()
   const { data: statuses = [] } = useUserDanceStatuses()
   const setListMutation = useSetDanceListType()
   const [visible, setVisible] = useState(false)
@@ -33,7 +35,7 @@ export default function DanceListSelector({ danceId, size = 22 }: Props) {
   const handleOpen = async () => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {
-      toastService.show('loginToUseLists')
+      toastService.show('loginToUseLists', { label: t('login'), onPress: () => router.push('/(auth)/login') })
       return
     }
     setVisible(true)
