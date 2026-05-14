@@ -16,6 +16,7 @@ export function useBall(id: string) {
     queryKey: [BALLS_KEY, id],
     queryFn: () => fetchBallById(id),
     enabled: !!id,
+    staleTime: 0,
   })
 }
 
