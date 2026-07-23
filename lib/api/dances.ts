@@ -4,7 +4,7 @@ import type { Dance, DanceWithDetails } from '@/types/database'
 export async function fetchDances(search?: string): Promise<Dance[]> {
   let query = supabase
     .from('dances')
-    .select('id, name, name_de, name_ru, difficulty, origin, created_at')
+    .select('id, name, name_de, name_ru, difficulty, origin, dance_type, created_at')
     .order('name', { ascending: true })
 
   if (search && search.trim()) {

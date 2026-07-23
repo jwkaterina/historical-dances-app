@@ -14,6 +14,8 @@ import DanceCard from '@/components/DanceCard'
 import type { Dance } from '@/types/database'
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'] as const
+const DANCE_TYPES = ['waltz', 'polka', 'contredanse', 'quadrille', 'cotillion', 'other'] as const
+type DanceType = typeof DANCE_TYPES[number]
 
 type UserFilter = 'favorites' | 'already_learned' | 'learning' | 'plan_to_learn'
 
@@ -30,6 +32,7 @@ export default function DancesScreen() {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [diffFilter, setDiffFilter] = useState<string | null>(null)
+  const [typeFilter, setTypeFilter] = useState<DanceType | null>(null)
   const [userFilter, setUserFilter] = useState<UserFilter | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
@@ -53,7 +56,8 @@ export default function DancesScreen() {
     const name = (language === 'de' ? d.name_de : d.name_ru) ?? d.name ?? ''
     const matchesSearch = !search || name.toLowerCase().includes(search.toLowerCase())
     const matchesDiff = !diffFilter || d.difficulty === diffFilter
-    if (!matchesSearch || !matchesDiff) return false
+    const matchesType = !typeFilter || d.dance_type === typeFilter
+    if (!matchesSearch || !matchesDiff || !matchesType) return false
     if (!userFilter) return true
     const status = statusMap[d.id]
     if (userFilter === 'favorites') return !!status?.is_favorite
@@ -108,6 +112,34 @@ export default function DancesScreen() {
 
       <View style={styles.chipsRow}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="always">
+          <Chip
+            selected={!typeFilter}
+            onPress={() => setTypeFilter(null)}
+            style={[styles.chip, !typeFilter && styles.chipSelected]}
+            textStyle={{ color: !typeFilter ? Colors.primaryForeground : Colors.mutedForeground, fontSize: 12 }}
+            compact
+          >
+            {t('allDanceTypes')}
+          </Chip>
+          {DANCE_TYPES.map(type => {
+            const active = typeFilter === type
+            return (
+              <Chip
+                key={type}
+                onPress={() => setTypeFilter(active ? null : type)}
+                style={[styles.chip, active && styles.chipSelected]}
+                textStyle={{ color: active ? Colors.primaryForeground : Colors.mutedForeground, fontSize: 12 }}
+                compact
+              >
+                {t(type as any)}
+              </Chip>
+            )
+          })}
+        </ScrollView>
+      </View>
+
+      <View style={styles.chipsRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="always">
           {USER_FILTERS.map(f => {
             const active = userFilter === f.value
             return (
@@ -145,7 +177,7 @@ export default function DancesScreen() {
           data={filtered}
           keyExtractor={item => item.id}
           renderItem={renderItem}
-          extraData={[diffFilter, userFilter]}
+          extraData={[diffFilter, typeFilter, userFilter]}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="always"
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />}

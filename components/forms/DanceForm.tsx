@@ -19,6 +19,7 @@ import { Fonts } from '@/lib/fonts'
 import type { Tutorial } from '@/types/database'
 
 const DIFFICULTIES = ['beginner', 'intermediate', 'advanced', 'expert'] as const
+const DANCE_TYPES = ['waltz', 'polka', 'contredanse', 'quadrille', 'cotillion', 'other'] as const
 
 interface VideoEntry {
   id?: string
@@ -79,6 +80,8 @@ export default function DanceForm({ danceId }: Props) {
   const [schemeRu, setSchemeRu] = useState('')
   const [difficulty, setDifficulty] = useState('')
   const [diffMenuVisible, setDiffMenuVisible] = useState(false)
+  const [danceType, setDanceType] = useState('')
+  const [typeMenuVisible, setTypeMenuVisible] = useState(false)
 
   // Videos — unified list (youtube + uploaded)
   const [videos, setVideos] = useState<VideoEntry[]>([])
@@ -121,6 +124,7 @@ export default function DanceForm({ danceId }: Props) {
       setSchemeDe(existing.scheme_de ?? '')
       setSchemeRu(existing.scheme_ru ?? '')
       setDifficulty(existing.difficulty ?? '')
+      setDanceType(existing.dance_type ?? '')
 
       setVideos(
         [...(existing.dance_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
@@ -227,6 +231,7 @@ export default function DanceForm({ danceId }: Props) {
       description_de: descDe || null, description_ru: descRu || null,
       scheme_de: schemeDe || null, scheme_ru: schemeRu || null,
       difficulty: (difficulty as any) || null,
+      dance_type: (danceType as any) || null,
     }
     let step = ''
     try {
@@ -387,6 +392,28 @@ export default function DanceForm({ danceId }: Props) {
             titleStyle={{ color: Colors.mutedForeground }} />
           {DIFFICULTIES.map(d => (
             <Menu.Item key={d} title={t(d)} onPress={() => { setDifficulty(d); setDiffMenuVisible(false) }}
+              titleStyle={{ color: Colors.foreground }} />
+          ))}
+        </Menu>
+
+        <Divider style={styles.divider} />
+
+        {/* Dance type */}
+        <Text style={styles.fieldLabel}>{t('danceType')}</Text>
+        <Menu
+          visible={typeMenuVisible}
+          onDismiss={() => setTypeMenuVisible(false)}
+          anchor={
+            <Button mode="outlined" onPress={() => setTypeMenuVisible(true)}
+              style={styles.menuBtn} textColor={danceType ? Colors.foreground : Colors.mutedForeground}>
+              {danceType ? t(danceType as any) : t('selectDanceType')}
+            </Button>
+          }
+        >
+          <Menu.Item title={t('selectDanceType')} onPress={() => { setDanceType(''); setTypeMenuVisible(false) }}
+            titleStyle={{ color: Colors.mutedForeground }} />
+          {DANCE_TYPES.map(type => (
+            <Menu.Item key={type} title={t(type as any)} onPress={() => { setDanceType(type); setTypeMenuVisible(false) }}
               titleStyle={{ color: Colors.foreground }} />
           ))}
         </Menu>

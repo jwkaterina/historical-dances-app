@@ -11,6 +11,7 @@ export interface Dance {
   scheme_ru: string | null
   difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert' | null
   origin: string | null
+  dance_type: 'waltz' | 'polka' | 'contredanse' | 'quadrille' | 'cotillion' | 'other' | null
   created_at: string
 }
 
