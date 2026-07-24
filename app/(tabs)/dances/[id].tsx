@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View, Share } from 'react-native'
 import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip, List, IconButton } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -41,6 +41,12 @@ export default function DanceDetailScreen() {
 
   const name = dance ? ((language === 'de' ? dance.name_de : dance.name_ru) ?? dance.name ?? '') : ''
 
+  const handleShare = async () => {
+    const webUrl = process.env.EXPO_PUBLIC_WEB_URL
+    const url = webUrl ? `${webUrl}/dance/${id}?lang=${language}` : name
+    await Share.share({ message: url, url })
+  }
+
   if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />
   if (isError && !dance) return (
     <View style={styles.center}><Text style={{ color: Colors.mutedForeground, textAlign: 'center', padding: 24 }}>{t('dataUnavailableOffline')}</Text></View>
@@ -80,6 +86,7 @@ export default function DanceDetailScreen() {
           {dance.difficulty && <DifficultyStars difficulty={dance.difficulty} size={16} />}
           {dance.origin && <Text variant="bodySmall" style={styles.origin}>{t('origin')}: {dance.origin}</Text>}
           <View style={styles.statusActions}>
+            <IconButton icon="share-variant" iconColor={Colors.mutedForeground} size={22} onPress={handleShare} style={styles.shareBtn} />
             <FavoriteButton danceId={dance.id} />
             <DanceListSelector danceId={dance.id} />
           </View>
@@ -255,5 +262,5 @@ const styles = StyleSheet.create({
   typeBadgeText: { color: Colors.secondaryForeground, fontSize: 11, fontFamily: Fonts.body },
   actions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   actionBtn: { flex: 1, borderColor: Colors.border },
-
+  shareBtn: { margin: 0 },
 })

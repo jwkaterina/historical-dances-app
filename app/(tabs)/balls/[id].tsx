@@ -1,5 +1,5 @@
-import { ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native'
-import { Text, Card, Divider, Button, ActivityIndicator, Chip, Icon } from 'react-native-paper'
+import { ScrollView, StyleSheet, View, TouchableOpacity, Share } from 'react-native'
+import { Text, Card, Divider, Button, ActivityIndicator, Chip, Icon, IconButton } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { format } from 'date-fns'
 import { useState, useMemo } from 'react'
@@ -56,6 +56,12 @@ export default function BallDetailScreen() {
   const formattedDate = ball.date ? format(new Date(ball.date), 'dd.MM.yyyy') : ''
   const sections = [...(ball.ball_sections || [])].sort((a, b) => a.order_index - b.order_index)
   const getSectionName = (index: number) => language === 'ru' ? `Отделение ${index + 1}` : `Abteilung ${index + 1}`
+  const handleShare = async () => {
+    const webUrl = process.env.EXPO_PUBLIC_WEB_URL
+    const url = webUrl ? `${webUrl}/balls/${ball.id}?lang=${language}` : name
+    await Share.share({ message: url, url })
+  }
+
   const handleDelete = async () => {
     await deleteMutation.mutateAsync(ball.id)
     router.back()
@@ -64,7 +70,10 @@ export default function BallDetailScreen() {
   return (
     <>
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, currentTrack && { paddingBottom: PLAYER_HEIGHT + 48 }]}>
-      <Text variant="headlineMedium" style={styles.title}>{name}</Text>
+      <View style={styles.titleRow}>
+        <Text variant="headlineMedium" style={styles.title}>{name}</Text>
+        <IconButton icon="share-variant" iconColor={Colors.mutedForeground} size={22} onPress={handleShare} style={styles.shareBtn} />
+      </View>
 
       <View style={styles.meta}>
         {formattedDate ? <Text variant="bodySmall" style={styles.metaText}>{formattedDate}</Text> : null}
@@ -192,7 +201,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontFamily: Fonts.heading, color: Colors.foreground, marginBottom: 8 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  title: { fontFamily: Fonts.heading, color: Colors.foreground, flex: 1 },
+  shareBtn: { margin: 0 },
   meta: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   metaText: { color: Colors.mutedForeground },
   infoLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: Colors.card, borderRadius: 8, borderWidth: 1, borderColor: Colors.border },
