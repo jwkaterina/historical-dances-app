@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View, TouchableOpacity, Share } from 'react-native'
+import { ScrollView, StyleSheet, View, TouchableOpacity, Share, Platform } from 'react-native'
 import { Text, Card, Divider, Button, ActivityIndicator, Chip, Icon, IconButton } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { format } from 'date-fns'
@@ -59,7 +59,7 @@ export default function BallDetailScreen() {
   const handleShare = async () => {
     const webUrl = process.env.EXPO_PUBLIC_WEB_URL
     const url = webUrl ? `${webUrl}/balls/${ball.id}?lang=${language}` : name
-    await Share.share({ message: url, url })
+    await Share.share(Platform.OS === 'ios' ? { url } : { message: url })
   }
 
   const handleDelete = async () => {

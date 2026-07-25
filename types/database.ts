@@ -21,6 +21,7 @@ export interface DanceVideo {
   video_type: 'youtube' | 'uploaded'
   url: string
   order_index: number
+  thumbnail_url?: string | null
 }
 
 export interface DanceFigure {

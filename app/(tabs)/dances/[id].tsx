@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { ScrollView, StyleSheet, View, Share } from 'react-native'
+import { ScrollView, StyleSheet, View, Share, Platform } from 'react-native'
 import { Text, Card, Divider, Button, ActivityIndicator, Snackbar, Chip, List, IconButton } from 'react-native-paper'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -44,7 +44,7 @@ export default function DanceDetailScreen() {
   const handleShare = async () => {
     const webUrl = process.env.EXPO_PUBLIC_WEB_URL
     const url = webUrl ? `${webUrl}/dance/${id}?lang=${language}` : name
-    await Share.share({ message: url, url })
+    await Share.share(Platform.OS === 'ios' ? { url } : { message: url })
   }
 
   if (isLoading) return <ActivityIndicator style={styles.center} size="large" color={Colors.primary} />

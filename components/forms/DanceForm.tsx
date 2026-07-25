@@ -3,6 +3,7 @@ import { Modal, FlatList, ScrollView, StyleSheet, View, KeyboardAvoidingView, Pl
 import { Text, TextInput, Button, SegmentedButtons, Card, IconButton, Snackbar, ActivityIndicator, Menu, Divider, Searchbar, List, Icon } from 'react-native-paper'
 import { useRouter } from 'expo-router'
 import * as DocumentPicker from 'expo-document-picker'
+import * as VideoThumbnails from 'expo-video-thumbnails'
 import { useLanguage } from '@/contexts/LanguageContext'
 import {
   useDance, useCreateDance, useUpdateDance,
@@ -27,6 +28,9 @@ interface VideoEntry {
   url: string
   localUri?: string
   mimeType?: string
+  thumbnail_url?: string | null
+  thumbnailLocalUri?: string
+  thumbnailMimeType?: string
 }
 
 interface FigureEntry {
@@ -128,7 +132,7 @@ export default function DanceForm({ danceId }: Props) {
 
       setVideos(
         [...(existing.dance_videos ?? [])].sort((a, b) => a.order_index - b.order_index)
-          .map(v => ({ id: v.id, video_type: v.video_type, url: v.url }))
+          .map(v => ({ id: v.id, video_type: v.video_type, url: v.url, thumbnail_url: v.thumbnail_url ?? null }))
       )
 
       setFigures(
@@ -170,11 +174,20 @@ export default function DanceForm({ danceId }: Props) {
     const result = await DocumentPicker.getDocumentAsync({ type: ['video/*'] })
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0]
+      let thumbnailLocalUri: string | undefined
+      try {
+        const thumb = await VideoThumbnails.getThumbnailAsync(asset.uri, { time: 1000 })
+        thumbnailLocalUri = thumb.uri
+      } catch {
+        // thumbnail generation failed, proceed without it
+      }
       setVideos(prev => [...prev, {
         video_type: 'uploaded',
         url: asset.name ?? 'video',
         localUri: asset.uri,
         mimeType: asset.mimeType ?? 'video/mp4',
+        thumbnailLocalUri,
+        thumbnailMimeType: 'image/jpeg',
       }])
     }
   }
@@ -248,15 +261,20 @@ export default function DanceForm({ danceId }: Props) {
         return f
       }))
 
-      // Upload new video files, keep existing ones as-is
+      // Upload new video files and thumbnails, keep existing ones as-is
       step = 'upload dance videos'
       const allVideos = await Promise.all(videos.map(async (v) => {
+        let url = v.url
+        let thumbnail_url = v.thumbnail_url ?? null
         if (v.localUri && v.mimeType) {
           const ext = v.mimeType.split('/')[1] ?? 'mp4'
-          const url = await uploadFile('videos', generateFileName('video', ext), v.localUri, v.mimeType)
-          return { id: v.id, video_type: 'uploaded' as const, url }
+          url = await uploadFile('videos', generateFileName('video', ext), v.localUri, v.mimeType)
         }
-        return { id: v.id, video_type: v.video_type, url: v.url }
+        if (v.thumbnailLocalUri && v.thumbnailMimeType) {
+          const ext = v.thumbnailMimeType.split('/')[1] ?? 'jpeg'
+          thumbnail_url = await uploadFile('images', generateFileName('thumb', ext), v.thumbnailLocalUri, v.thumbnailMimeType)
+        }
+        return { id: v.id, video_type: v.localUri ? 'uploaded' as const : v.video_type, url, thumbnail_url }
       }))
 
       let finalDanceId: string

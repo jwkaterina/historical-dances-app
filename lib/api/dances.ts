@@ -28,7 +28,7 @@ export async function fetchDanceById(id: string): Promise<DanceWithDetails | nul
       description, description_de, description_ru,
       scheme, scheme_de, scheme_ru,
       difficulty, origin, created_at,
-      dance_videos ( id, video_type, url, order_index ),
+      dance_videos ( id, video_type, url, order_index, thumbnail_url ),
       dance_figures (
         id, scheme_de, scheme_ru, order_index,
         figure_videos ( id, video_type, url, order_index )
@@ -137,7 +137,7 @@ export async function syncDanceFigures(
   }
 }
 
-export async function syncDanceVideos(danceId: string, videos: Array<{ id?: string; video_type: string; url: string }>) {
+export async function syncDanceVideos(danceId: string, videos: Array<{ id?: string; video_type: string; url: string; thumbnail_url?: string | null }>) {
   const { data: existing } = await supabase
     .from('dance_videos')
     .select('id')
@@ -154,9 +154,9 @@ export async function syncDanceVideos(danceId: string, videos: Array<{ id?: stri
   for (let i = 0; i < videos.length; i++) {
     const v = videos[i]
     if (v.id) {
-      await supabase.from('dance_videos').update({ video_type: v.video_type, url: v.url, order_index: i }).eq('id', v.id)
+      await supabase.from('dance_videos').update({ video_type: v.video_type, url: v.url, order_index: i, thumbnail_url: v.thumbnail_url ?? null }).eq('id', v.id)
     } else {
-      await supabase.from('dance_videos').insert({ dance_id: danceId, video_type: v.video_type, url: v.url, order_index: i })
+      await supabase.from('dance_videos').insert({ dance_id: danceId, video_type: v.video_type, url: v.url, order_index: i, thumbnail_url: v.thumbnail_url ?? null })
     }
   }
 }
