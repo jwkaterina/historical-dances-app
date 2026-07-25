@@ -214,6 +214,7 @@ export const translations = {
 
     toastError: "Fehler",
     toastSuccess: "Erfolg",
+    share: "Teilen",
     toastFailedUploadAudio: "Audio konnte nicht hochgeladen werden",
     toastFailedUploadVideo: "Video konnte nicht hochgeladen werden",
     toastAudioTooLarge: "Audiodatei zu groß. Maximale Größe ist 20MB.",
@@ -550,6 +551,7 @@ export const translations = {
 
     toastError: "Ошибка",
     toastSuccess: "Успешно",
+    share: "Поделиться",
     toastFailedUploadAudio: "Не удалось загрузить аудио",
     toastFailedUploadVideo: "Не удалось загрузить видео",
     toastAudioTooLarge: "Аудиофайл слишком большой. Максимальный размер 20МБ.",
