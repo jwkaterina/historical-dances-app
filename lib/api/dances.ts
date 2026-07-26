@@ -27,7 +27,7 @@ export async function fetchDanceById(id: string): Promise<DanceWithDetails | nul
       id, name, name_de, name_ru,
       description, description_de, description_ru,
       scheme, scheme_de, scheme_ru,
-      difficulty, origin, created_at,
+      difficulty, origin, dance_type, created_at,
       dance_videos ( id, video_type, url, order_index, thumbnail_url ),
       dance_figures (
         id, scheme_de, scheme_ru, order_index,
