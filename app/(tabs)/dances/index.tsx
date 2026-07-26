@@ -62,6 +62,10 @@ export default function DancesScreen() {
     const status = statusMap[d.id]
     if (userFilter === 'favorites') return !!status?.is_favorite
     return status?.list_type === userFilter
+  }).sort((a: Dance, b: Dance) => {
+    const nameA = (language === 'de' ? a.name_de : a.name_ru) ?? a.name ?? ''
+    const nameB = (language === 'de' ? b.name_de : b.name_ru) ?? b.name ?? ''
+    return nameA.localeCompare(nameB)
   })
 
   const renderItem = useCallback(({ item }: { item: Dance }) => (
