@@ -4,7 +4,7 @@ import { Colors } from '@/lib/colors'
 import { Fonts } from '@/lib/fonts'
 import type { MusicTrack } from '@/types/database'
 import DownloadButton from '@/components/DownloadButton'
-import { useTrackDuration, formatDuration } from '@/hooks/useTrackDuration'
+import { formatDuration } from '@/hooks/useTrackDuration'
 
 interface Props {
   track: MusicTrack
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function MusicCard({ track, isPlaying, language, onPress }: Props) {
-  const duration = useTrackDuration(track.id, track.audio_url)
+  const duration = track.duration_ms ?? null
   const dances = (track.dance_music ?? [])
     .map(dm => dm.dances)
     .filter(Boolean)

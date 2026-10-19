@@ -13,6 +13,7 @@ import {
 import { useMusic } from '@/hooks/useMusic'
 import { useTutorials } from '@/hooks/useTutorials'
 import { createMusicTrack } from '@/lib/api/music'
+import { localAudioDurationMs } from '@/lib/audioDuration'
 import { uploadFile, generateFileName } from '@/lib/upload'
 import { isNetworkError } from '@/lib/toastService'
 import { Colors } from '@/lib/colors'
@@ -50,6 +51,7 @@ interface MusicEntry {
   audioUrl: string
   audioLocalUri?: string
   audioMimeType?: string
+  durationMs?: number | null
 }
 
 interface Props {
@@ -313,8 +315,9 @@ export default function DanceForm({ danceId }: Props) {
         if (m.id) return m
         if (m.audioLocalUri && m.audioMimeType) {
           const ext = m.audioMimeType.split('/')[1] ?? 'mp3'
+          const durationMs = await localAudioDurationMs(m.audioLocalUri)
           const audioUrl = await uploadFile('audio', generateFileName('audio', ext), m.audioLocalUri, m.audioMimeType)
-          return { ...m, audioUrl }
+          return { ...m, audioUrl, durationMs }
         }
         return m
       }))
@@ -327,6 +330,7 @@ export default function DanceForm({ danceId }: Props) {
           artist: m.artist || null,
           tempo: m.tempo ? parseInt(m.tempo, 10) : null,
           audio_url: m.audioUrl || null,
+          duration_ms: m.durationMs ?? null,
         })
         return track.id
       }))

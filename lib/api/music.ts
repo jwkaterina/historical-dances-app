@@ -4,7 +4,7 @@ import type { MusicTrack } from '@/types/database'
 export async function fetchMusic(): Promise<MusicTrack[]> {
   const { data, error } = await supabase
     .from('music')
-    .select('id, title, artist, tempo, genre, audio_url, created_at, dance_music ( dances:dance_id ( id, name_de, name_ru ) )')
+    .select('id, title, artist, tempo, genre, audio_url, duration_ms, created_at, dance_music ( dances:dance_id ( id, name_de, name_ru ) )')
     .order('title', { ascending: true })
 
   if (error) throw error
