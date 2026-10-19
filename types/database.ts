@@ -48,6 +48,7 @@ export interface MusicTrack {
   tempo: number | null
   genre: string | null
   audio_url: string | null
+  duration_ms?: number | null
   created_at: string
   dance_music?: { dances: Pick<Dance, 'id' | 'name_de' | 'name_ru'> | null }[]
 }

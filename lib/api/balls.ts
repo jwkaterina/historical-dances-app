@@ -169,7 +169,7 @@ export async function fetchDancesForBall() {
     .select(`
       id, name, name_de, name_ru, difficulty,
       dance_music (
-        music:music_id ( id, title, artist, audio_url )
+        music:music_id ( id, title, artist, audio_url, duration_ms )
       )
     `)
     .order('name', { ascending: true })

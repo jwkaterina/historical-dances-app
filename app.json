@@ -2,7 +2,7 @@
   "expo": {
     "name": "Historical Dances",
     "slug": "historical-dances-app",
-    "version": "1.5.7",
+    "version": "1.5.8",
     "orientation": "portrait",
     "scheme": "historical-dances",
     "icon": "./assets/icon.png",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.historicaldances.app",
-      "buildNumber": "28",
+      "buildNumber": "29",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": [
@@ -34,7 +34,7 @@
         "backgroundColor": "#f5f1e6"
       },
       "package": "com.historicaldances.app",
-      "versionCode": 37,
+      "versionCode": 38,
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
       ]

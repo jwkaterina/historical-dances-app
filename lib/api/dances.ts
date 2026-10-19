@@ -34,7 +34,7 @@ export async function fetchDanceById(id: string): Promise<DanceWithDetails | nul
         figure_videos ( id, video_type, url, order_index )
       ),
       dance_music (
-        music: music_id ( id, title, artist, tempo, genre, audio_url )
+        music: music_id ( id, title, artist, tempo, genre, audio_url, duration_ms )
       ),
       dance_tutorials (
         tutorials:tutorial_id ( id, title_de, title_ru, type, video_type, url )

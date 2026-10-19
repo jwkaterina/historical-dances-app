@@ -14,7 +14,7 @@ import DifficultyStars from '@/components/DifficultyStars'
 import FavoriteButton from '@/components/FavoriteButton'
 import DanceListSelector from '@/components/DanceListSelector'
 import { useAudioPlayer, PLAYER_HEIGHT } from '@/contexts/AudioPlayerContext'
-import { useTrackDuration, formatDuration } from '@/hooks/useTrackDuration'
+import { formatDuration } from '@/hooks/useTrackDuration'
 import type { DanceVideo, DanceFigure, MusicTrack, Tutorial } from '@/types/database'
 
 
@@ -207,7 +207,7 @@ export default function DanceDetailScreen() {
 }
 
 function DanceMusicCard({ track, isPlaying, onPress }: { track: MusicTrack; isPlaying: boolean; onPress: () => void }) {
-  const duration = useTrackDuration(track.id, track.audio_url)
+  const duration = track.duration_ms ?? null
   return (
     <Card style={[styles.musicCard, isPlaying && styles.musicCardActive]} mode="elevated" onPress={onPress}>
       <Card.Content style={styles.musicCardContent}>
